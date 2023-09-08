@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/vamika-digital/wms-api-server/config/types/status"
+	"github.com/vamika-digital/wms-api-server/common/types"
 	"github.com/vamika-digital/wms-api-server/internal/auth/domain"
 )
 
@@ -18,8 +18,8 @@ type UserRepository interface {
 
 type UserFilterOptions struct {
 	Name     string
-	StaffID  string            // Filter by username, using a LIKE query
-	Username string            // Filter by username, using a LIKE query
-	Email    string            // Filter by email, using a LIKE query
-	Status   status.StatusType // Filter by user status, using an exact match
+	StaffID  string           // Filter by username, using a LIKE query
+	Username string           // Filter by username, using a LIKE query
+	Email    string           // Filter by email, using a LIKE query
+	Status   types.StatusEnum // Filter by user status, using an exact match
 }

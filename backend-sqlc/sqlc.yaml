@@ -1,0 +1,8 @@
+version: 2
+sql:
+  - engine: "mysql"
+    queries: "query.sql"
+    schema: "schema.sql"
+    gen:
+      go:
+        out: "src/internal/domain/auth"

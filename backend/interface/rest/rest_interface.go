@@ -11,29 +11,33 @@ import (
 	// userRest "github.com/vamika-digital/wms-api-server/internal/app/user/interfaces/rest"
 	// "github.com/vamika-digital/wms-api-server/internal/app/warehouse"
 	// "github.com/vamika-digital/wms-api-server/internal/middlewares"
+	"github.com/vamika-digital/wms-api-server/interface/rest/auth"
 	"github.com/vamika-digital/wms-api-server/pkg/database"
 )
 
 type Server struct {
-	Address string
-	Port    int
-	// AuthModule      *authRest.AuthModule
+	Address    string
+	Port       int
+	AuthModule *auth.AuthRestModule
 	// UserModule      *userRest.UserModule
 	// ProductModule   *productRest.ProductModule
 	// WarehouseModule *warehouse.WarehouseModule
 }
 
 func NewServer(address string, port int, db database.Connection) *Server {
-	// authModule := authRest.NewAuthModule(db)
+
+	authModule := auth.NewAuthRestModule(db)
 	// userModule := userRest.NewUserModule(db)
 	// productModule := productRest.NewProductModule(db)
 	// warehouseModule := warehouse.NewWarehouseModule(db)
 	// return &Server{Address: address, Port: port, AuthModule: authModule, UserModule: userModule, ProductModule: productModule, WarehouseModule: warehouseModule}
-	return &Server{Address: address, Port: port}
+	return &Server{Address: address, Port: port, AuthModule: authModule}
 }
 
 func (s *Server) Run() {
 	r := mux.NewRouter()
+
+	s.AuthModule.RegisterRoutes(r.PathPrefix("/").Subrouter())
 
 	// r.Use(middlewares.ContentTypeMiddleware)
 	// r.Use(middlewares.CORSMiddleware)

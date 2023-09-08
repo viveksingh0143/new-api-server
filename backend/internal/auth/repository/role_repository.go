@@ -1,7 +1,8 @@
 package repository
 
 import (
-	"github.com/vamika-digital/wms-api-server/config/types/status"
+	"github.com/vamika-digital/wms-api-server/common/types"
+
 	"github.com/vamika-digital/wms-api-server/internal/auth/domain"
 )
 
@@ -15,6 +16,7 @@ type RoleRepository interface {
 }
 
 type RoleFilterOptions struct {
-	Name   string
-	Status status.StatusType // Filter by role status, using an exact match
+	Query  types.NullString `schema:"query"`
+	Name   types.NullString `schema:"name"`
+	Status types.StatusEnum `schema:"status"`
 }
