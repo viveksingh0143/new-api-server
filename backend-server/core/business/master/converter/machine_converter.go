@@ -36,7 +36,7 @@ func (c *MachineConverter) ToDto(domainMachine *domain.Machine) *machine.Machine
 }
 
 func (c *MachineConverter) ToDtoSlice(domainMachines []*domain.Machine) []*machine.MachineDto {
-	var machineDtos []*machine.MachineDto
+	var machineDtos = make([]*machine.MachineDto, 0)
 	for _, domainMachine := range domainMachines {
 		machineDtos = append(machineDtos, c.ToDto(domainMachine))
 	}

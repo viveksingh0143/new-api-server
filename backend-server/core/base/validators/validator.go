@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/vamika-digital/wms-api-server/core/base/customtypes"
 	"github.com/vamika-digital/wms-api-server/core/base/dto"
+	"github.com/vamika-digital/wms-api-server/core/base/helpers"
 )
 
 var Validate *validator.Validate
@@ -56,8 +57,13 @@ func GetAllErrors(err error, anyType interface{}) []*dto.IError {
 		field, _ := t.FieldByName(err.Field())
 		var errMsg string
 		tag := err.Tag()
+
 		if template, ok := tagMessages[tag]; ok {
-			errMsg = fmt.Sprintf(template, err.Param())
+			if helpers.HasFormatVerbs(template) {
+				errMsg = fmt.Sprintf(template, err.Param())
+			} else {
+				errMsg = template
+			}
 		} else {
 			errMsg = err.Error()
 		}

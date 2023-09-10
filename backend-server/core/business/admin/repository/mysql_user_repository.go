@@ -190,6 +190,22 @@ func (r *SQLUserRepository) GetById(userID int64) (*domain.User, error) {
 	return user, err
 }
 
+func (r *SQLUserRepository) GetByIds(userIDs []int64) ([]*domain.User, error) {
+	var users []*domain.User
+	query, args, err := sqlx.In("SELECT * FROM users WHERE id IN (?) AND deleted_at IS NULL", userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.DB.Rebind(query)
+	err = r.DB.Select(&users, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (r *SQLUserRepository) Update(user *domain.User) error {
 	if user.Username != "" {
 		var count int

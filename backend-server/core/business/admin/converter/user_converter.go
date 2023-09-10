@@ -56,7 +56,7 @@ func (c *UserConverter) ToDto(domainUser *domain.User) *user.UserDto {
 }
 
 func (c *UserConverter) ToDtoSlice(domainUsers []*domain.User) []*user.UserDto {
-	var userDtos []*user.UserDto
+	var userDtos = make([]*user.UserDto, 0)
 	for _, domainUser := range domainUsers {
 		userDtos = append(userDtos, c.ToDto(domainUser))
 	}

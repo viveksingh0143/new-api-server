@@ -54,7 +54,7 @@ func (c *RoleConverter) ToDto(domainRole *domain.Role) *role.RoleDto {
 }
 
 func (c *RoleConverter) ToDtoSlice(domainRoles []*domain.Role) []*role.RoleDto {
-	var roleDtos []*role.RoleDto
+	var roleDtos = make([]*role.RoleDto, 0)
 	for _, domainRole := range domainRoles {
 		roleDtos = append(roleDtos, c.ToDto(domainRole))
 	}

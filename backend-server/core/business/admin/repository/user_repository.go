@@ -11,6 +11,7 @@ type UserRepository interface {
 	Delete(userID int64) error
 	DeleteByIDs(userIDs []int64) error
 	GetById(userID int64) (*domain.User, error)
+	GetByIds(userIDs []int64) ([]*domain.User, error)
 	GetTotalCount(filter *user.UserFilterDto) (int, error)
 	GetAll(page int, pageSize int, sort string, filter *user.UserFilterDto) ([]*domain.User, error)
 

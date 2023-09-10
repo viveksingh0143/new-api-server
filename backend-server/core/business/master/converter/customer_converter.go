@@ -30,18 +30,18 @@ func (c *CustomerConverter) ToDto(domainCustomer *domain.Customer) *customer.Cus
 		Name:          domainCustomer.Name,
 		ContactPerson: domainCustomer.ContactPerson,
 		BillingAddress: customer.BillingAddress{
-			Address1: domainCustomer.BillingAddress.Address1,
-			Address2: domainCustomer.BillingAddress.Address2,
-			State:    domainCustomer.BillingAddress.State,
-			Country:  domainCustomer.BillingAddress.Country,
-			Pincode:  domainCustomer.BillingAddress.Pincode,
+			Address1: domainCustomer.BillingAddress1,
+			Address2: domainCustomer.BillingAddress2,
+			State:    domainCustomer.BillingState,
+			Country:  domainCustomer.BillingCountry,
+			Pincode:  domainCustomer.BillingPincode,
 		},
 		ShippingAddress: customer.ShippingAddress{
-			Address1: domainCustomer.ShippingAddress.Address1,
-			Address2: domainCustomer.ShippingAddress.Address2,
-			State:    domainCustomer.ShippingAddress.State,
-			Country:  domainCustomer.ShippingAddress.Country,
-			Pincode:  domainCustomer.ShippingAddress.Pincode,
+			Address1: domainCustomer.ShippingAddress1,
+			Address2: domainCustomer.ShippingAddress2,
+			State:    domainCustomer.ShippingState,
+			Country:  domainCustomer.ShippingCountry,
+			Pincode:  domainCustomer.ShippingPincode,
 		},
 		Status:        domainCustomer.Status,
 		CreatedAt:     customtypes.NewValidNullTime(domainCustomer.CreatedAt),
@@ -52,7 +52,7 @@ func (c *CustomerConverter) ToDto(domainCustomer *domain.Customer) *customer.Cus
 }
 
 func (c *CustomerConverter) ToDtoSlice(domainCustomers []*domain.Customer) []*customer.CustomerDto {
-	var customerDtos []*customer.CustomerDto
+	var customerDtos = make([]*customer.CustomerDto, 0)
 	for _, domainCustomer := range domainCustomers {
 		customerDtos = append(customerDtos, c.ToDto(domainCustomer))
 	}
@@ -61,25 +61,21 @@ func (c *CustomerConverter) ToDtoSlice(domainCustomers []*domain.Customer) []*cu
 
 func (c *CustomerConverter) ToDomain(customerDto *customer.CustomerCreateDto) *domain.Customer {
 	domainCustomer := &domain.Customer{
-		Code:          customerDto.Code,
-		Name:          customerDto.Name,
-		ContactPerson: customerDto.ContactPerson,
-		BillingAddress: domain.BillingAddress{
-			Address1: customerDto.BillingAddress.Address1,
-			Address2: customerDto.BillingAddress.Address2,
-			State:    customerDto.BillingAddress.State,
-			Country:  customerDto.BillingAddress.Country,
-			Pincode:  customerDto.BillingAddress.Pincode,
-		},
-		ShippingAddress: domain.ShippingAddress{
-			Address1: customerDto.ShippingAddress.Address1,
-			Address2: customerDto.ShippingAddress.Address2,
-			State:    customerDto.ShippingAddress.State,
-			Country:  customerDto.ShippingAddress.Country,
-			Pincode:  customerDto.ShippingAddress.Pincode,
-		},
-		Status:        customerDto.Status,
-		LastUpdatedBy: customerDto.LastUpdatedBy,
+		Code:             customerDto.Code,
+		Name:             customerDto.Name,
+		ContactPerson:    customerDto.ContactPerson,
+		BillingAddress1:  customerDto.BillingAddress.Address1,
+		BillingAddress2:  customerDto.BillingAddress.Address2,
+		BillingState:     customerDto.BillingAddress.State,
+		BillingCountry:   customerDto.BillingAddress.Country,
+		BillingPincode:   customerDto.BillingAddress.Pincode,
+		ShippingAddress1: customerDto.ShippingAddress.Address1,
+		ShippingAddress2: customerDto.ShippingAddress.Address2,
+		ShippingState:    customerDto.ShippingAddress.State,
+		ShippingCountry:  customerDto.ShippingAddress.Country,
+		ShippingPincode:  customerDto.ShippingAddress.Pincode,
+		Status:           customerDto.Status,
+		LastUpdatedBy:    customerDto.LastUpdatedBy,
 	}
 	return domainCustomer
 }
@@ -88,20 +84,16 @@ func (c *CustomerConverter) ToUpdateDomain(domainCustomer *domain.Customer, cust
 	domainCustomer.Code = customerDto.Code
 	domainCustomer.Name = customerDto.Name
 	domainCustomer.ContactPerson = customerDto.ContactPerson
-	domainCustomer.BillingAddress = domain.BillingAddress{
-		Address1: customerDto.BillingAddress.Address1,
-		Address2: customerDto.BillingAddress.Address2,
-		State:    customerDto.BillingAddress.State,
-		Country:  customerDto.BillingAddress.Country,
-		Pincode:  customerDto.BillingAddress.Pincode,
-	}
-	domainCustomer.ShippingAddress = domain.ShippingAddress{
-		Address1: customerDto.ShippingAddress.Address1,
-		Address2: customerDto.ShippingAddress.Address2,
-		State:    customerDto.ShippingAddress.State,
-		Country:  customerDto.ShippingAddress.Country,
-		Pincode:  customerDto.ShippingAddress.Pincode,
-	}
+	domainCustomer.BillingAddress1 = customerDto.BillingAddress.Address1
+	domainCustomer.BillingAddress2 = customerDto.BillingAddress.Address2
+	domainCustomer.BillingState = customerDto.BillingAddress.State
+	domainCustomer.BillingCountry = customerDto.BillingAddress.Country
+	domainCustomer.BillingPincode = customerDto.BillingAddress.Pincode
+	domainCustomer.ShippingAddress1 = customerDto.ShippingAddress.Address1
+	domainCustomer.ShippingAddress2 = customerDto.ShippingAddress.Address2
+	domainCustomer.ShippingState = customerDto.ShippingAddress.State
+	domainCustomer.ShippingCountry = customerDto.ShippingAddress.Country
+	domainCustomer.ShippingPincode = customerDto.ShippingAddress.Pincode
 	if customerDto.Status.IsValid() {
 		domainCustomer.Status = customerDto.Status
 	}

@@ -201,13 +201,6 @@ func (r *SQLMachineRepository) Update(machine *domain.Machine) error {
 		return err
 	}
 
-	query = "DELETE FROM permissions WHERE machine_id=?"
-	_, err = tx.Exec(query, machine.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
 	return tx.Commit()
 }
 

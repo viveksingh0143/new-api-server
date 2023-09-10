@@ -28,10 +28,11 @@ func NewServer(address string, port int, conn drivers.Connection) *Server {
 
 	machineService := registry.GetContainerInstance(conn).MachineService
 	customerService := registry.GetContainerInstance(conn).CustomerService
+	storeService := registry.GetContainerInstance(conn).StoreService
 
 	authModule := auth.NewAuthRestModule(authService)
 	adminModule := admin.NewAdminRestModule(roleService, userService)
-	masterModule := master.NewMasterRestModule(machineService, customerService)
+	masterModule := master.NewMasterRestModule(machineService, customerService, storeService)
 
 	return &Server{
 		Address:      address,

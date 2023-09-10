@@ -19,6 +19,7 @@ type Container struct {
 	AuthService     authService.AuthService
 	MachineService  masterService.MachineService
 	CustomerService masterService.CustomerService
+	StoreService    masterService.StoreService
 }
 
 var (
@@ -58,16 +59,23 @@ func (c *Container) initialize(db drivers.Connection) error {
 		return err
 	}
 
+	storeRepo, err := masterRepository.NewSQLStoreRepository(db)
+	if err != nil {
+		return err
+	}
+
 	roleConverter := adminConverter.NewRoleConverter()
 	userConverter := adminConverter.NewUserConverter(roleConverter)
 
 	machineConverter := masterConverter.NewMachineConverter()
 	customerConverter := masterConverter.NewCustomerConverter()
+	storeConverter := masterConverter.NewStoreConverter(userConverter)
 
 	c.RoleService = adminService.NewRoleService(roleRepo, permissionRepo, roleConverter)
 	c.UserService = adminService.NewUserService(userRepo, roleRepo, userConverter)
 	c.AuthService = authService.NewAuthService(userRepo, *userConverter)
 	c.CustomerService = masterService.NewCustomerService(customerRepo, customerConverter)
 	c.MachineService = masterService.NewMachineService(machineRepo, machineConverter)
+	c.StoreService = masterService.NewStoreService(storeRepo, userRepo, storeConverter)
 	return nil
 }
