@@ -13,5 +13,5 @@ type UserCreateDto struct {
 	EMail         customtypes.NullString `json:"email" validate:"required"`
 	Status        customtypes.StatusEnum `json:"status"`
 	LastUpdatedBy customtypes.NullString `json:"last_updated_by"`
-	Roles         []role.RoleMinimalDto  `json:"roles"`
+	Roles         []*role.RoleMinimalDto `json:"roles"`
 }

@@ -13,8 +13,8 @@ func NewRoleConverter() *RoleConverter {
 	return &RoleConverter{}
 }
 
-func (c *RoleConverter) ToMinimalDto(domainRole *domain.Role) role.RoleMinimalDto {
-	roleDto := role.RoleMinimalDto{
+func (c *RoleConverter) ToMinimalDto(domainRole *domain.Role) *role.RoleMinimalDto {
+	roleDto := &role.RoleMinimalDto{
 		ID:     domainRole.ID,
 		Name:   domainRole.Name,
 		Status: domainRole.Status,
@@ -22,8 +22,8 @@ func (c *RoleConverter) ToMinimalDto(domainRole *domain.Role) role.RoleMinimalDt
 	return roleDto
 }
 
-func (c *RoleConverter) ToDto(domainRole *domain.Role) role.RoleDto {
-	roleDto := role.RoleDto{
+func (c *RoleConverter) ToDto(domainRole *domain.Role) *role.RoleDto {
+	roleDto := &role.RoleDto{
 		ID:            domainRole.ID,
 		Name:          domainRole.Name,
 		Status:        domainRole.Status,
@@ -33,9 +33,9 @@ func (c *RoleConverter) ToDto(domainRole *domain.Role) role.RoleDto {
 	}
 
 	// Convert Permissions from domain model to DTO
-	var permissionDtos []permission.PermissionDto
+	var permissionDtos []*permission.PermissionDto
 	for _, domainPermission := range domainRole.Permissions {
-		permissionDto := permission.PermissionDto{
+		permissionDto := &permission.PermissionDto{
 			ID:         domainPermission.ID,
 			RoleID:     domainPermission.RoleID,
 			ModuleName: domainPermission.ModuleName,
@@ -53,15 +53,15 @@ func (c *RoleConverter) ToDto(domainRole *domain.Role) role.RoleDto {
 	return roleDto
 }
 
-func (c *RoleConverter) ToDtoSlice(domainRoles []*domain.Role) []role.RoleDto {
-	var roleDtos []role.RoleDto
+func (c *RoleConverter) ToDtoSlice(domainRoles []*domain.Role) []*role.RoleDto {
+	var roleDtos []*role.RoleDto
 	for _, domainRole := range domainRoles {
 		roleDtos = append(roleDtos, c.ToDto(domainRole))
 	}
 	return roleDtos
 }
 
-func (c *RoleConverter) ToDomain(roleDto role.RoleCreateDto) *domain.Role {
+func (c *RoleConverter) ToDomain(roleDto *role.RoleCreateDto) *domain.Role {
 	domainRole := &domain.Role{
 		Name:          roleDto.Name.String,
 		Status:        roleDto.Status.Status,
@@ -78,7 +78,7 @@ func (c *RoleConverter) ToDomain(roleDto role.RoleCreateDto) *domain.Role {
 	return domainRole
 }
 
-func (c *RoleConverter) ToUpdateDomain(domainRole *domain.Role, roleDto role.RoleUpdateDto) {
+func (c *RoleConverter) ToUpdateDomain(domainRole *domain.Role, roleDto *role.RoleUpdateDto) {
 	if roleDto.Name != "" {
 		domainRole.Name = roleDto.Name
 	}
@@ -95,7 +95,7 @@ func (c *RoleConverter) ToUpdateDomain(domainRole *domain.Role, roleDto role.Rol
 	domainRole.Permissions = domainPermissions
 }
 
-func (c *RoleConverter) ToPermissionDomain(permissionDto permission.PermissionDto) *domain.Permission {
+func (c *RoleConverter) ToPermissionDomain(permissionDto *permission.PermissionDto) *domain.Permission {
 	domainPermission := &domain.Permission{
 		ID:         permissionDto.ID,
 		RoleID:     permissionDto.RoleID,

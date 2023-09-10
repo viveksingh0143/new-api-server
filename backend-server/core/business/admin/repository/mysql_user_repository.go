@@ -2,6 +2,7 @@ package repository
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -14,11 +15,15 @@ type SQLUserRepository struct {
 	DB *sqlx.DB
 }
 
-func NewSQLUserRepository(conn drivers.Connection) *SQLUserRepository {
-	return &SQLUserRepository{DB: conn.GetDB()}
+func NewSQLUserRepository(conn drivers.Connection) (UserRepository, error) {
+	db := conn.GetDB()
+	if db == nil {
+		return nil, errors.New("failed to get database connection")
+	}
+	return &SQLUserRepository{DB: conn.GetDB()}, nil
 }
 
-func (r *SQLUserRepository) getFilterQueryWithArgs(page int, pageSize int, sort string, filter user.UserFilterDto) (string, map[string]interface{}) {
+func (r *SQLUserRepository) getFilterQueryWithArgs(page int, pageSize int, sort string, filter *user.UserFilterDto) (string, map[string]interface{}) {
 	var queryBuffer bytes.Buffer
 	args := make(map[string]interface{})
 
@@ -66,7 +71,7 @@ func (r *SQLUserRepository) getFilterQueryWithArgs(page int, pageSize int, sort 
 	return queryBuffer.String(), args
 }
 
-func (r *SQLUserRepository) GetTotalCount(filter user.UserFilterDto) (int, error) {
+func (r *SQLUserRepository) GetTotalCount(filter *user.UserFilterDto) (int, error) {
 	var count int
 	var queryBuffer bytes.Buffer
 
@@ -88,7 +93,7 @@ func (r *SQLUserRepository) GetTotalCount(filter user.UserFilterDto) (int, error
 	return count, nil
 }
 
-func (r *SQLUserRepository) GetAll(page int, pageSize int, sort string, filter user.UserFilterDto) ([]*domain.User, error) {
+func (r *SQLUserRepository) GetAll(page int, pageSize int, sort string, filter *user.UserFilterDto) ([]*domain.User, error) {
 	users := make([]*domain.User, 0)
 	var queryBuffer bytes.Buffer
 
@@ -185,12 +190,6 @@ func (r *SQLUserRepository) GetById(userID int64) (*domain.User, error) {
 	return user, err
 }
 
-func (r *SQLUserRepository) GetByName(userName string) (*domain.User, error) {
-	user := &domain.User{}
-	err := r.DB.Get(user, "SELECT * FROM users WHERE name = ? AND deleted_at IS NULL", userName)
-	return user, err
-}
-
 func (r *SQLUserRepository) Update(user *domain.User) error {
 	if user.Username != "" {
 		var count int
@@ -263,5 +262,39 @@ func (r *SQLUserRepository) Update(user *domain.User) error {
 
 func (r *SQLUserRepository) Delete(userID int64) error {
 	_, err := r.DB.Exec("UPDATE users SET deleted_at = NOW() WHERE id = ?", userID)
+	return err
+}
+
+func (r *SQLUserRepository) GetByUsername(username string) (*domain.User, error) {
+	user := &domain.User{}
+	err := r.DB.Get(user, "SELECT * FROM users WHERE username = ? AND deleted_at IS NULL", username)
+	return user, err
+}
+func (r *SQLUserRepository) GetByEmail(email string) (*domain.User, error) {
+	user := &domain.User{}
+	err := r.DB.Get(user, "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL", email)
+	return user, err
+}
+func (r *SQLUserRepository) GetByStaffID(staffID string) (*domain.User, error) {
+	user := &domain.User{}
+	err := r.DB.Get(user, "SELECT * FROM users WHERE staff_id = ? AND deleted_at IS NULL", staffID)
+	return user, err
+}
+
+func (r *SQLUserRepository) DeleteByIDs(userIDs []int64) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	query := "UPDATE users SET deleted_at = NOW() WHERE id IN (?)"
+	query, args, err := sqlx.In(query, userIDs)
+
+	if err != nil {
+		return err
+	}
+
+	query = r.DB.Rebind(query)
+
+	_, err = r.DB.Exec(query, args...)
 	return err
 }

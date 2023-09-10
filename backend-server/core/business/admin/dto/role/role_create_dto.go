@@ -6,8 +6,8 @@ import (
 )
 
 type RoleCreateDto struct {
-	Name          customtypes.NullString     `json:"name" validate:"required"`
-	Status        customtypes.NullStatusEnum `json:"status" validate:"required"`
-	LastUpdatedBy customtypes.NullString     `json:"last_updated_by"`
-	Permissions   []permission.PermissionDto `json:"permissions"`
+	Name          customtypes.NullString      `json:"name" validate:"required"`
+	Status        customtypes.NullStatusEnum  `json:"status" validate:"required"`
+	LastUpdatedBy customtypes.NullString      `json:"last_updated_by"`
+	Permissions   []*permission.PermissionDto `json:"permissions"`
 }

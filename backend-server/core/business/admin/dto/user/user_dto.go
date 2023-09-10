@@ -16,5 +16,5 @@ type UserDto struct {
 	CreatedAt      customtypes.NullTime   `json:"created_at"`
 	UpdatedAt      customtypes.NullTime   `json:"updated_at"`
 	LastUpdatedBy  customtypes.NullString `json:"last_updated_by"`
-	Roles          []role.RoleMinimalDto  `json:"roles"`
+	Roles          []*role.RoleMinimalDto `json:"roles"`
 }

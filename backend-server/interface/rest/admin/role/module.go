@@ -19,6 +19,7 @@ func (m *RoleRestModule) RegisterRoutes(r *gin.RouterGroup) {
 	{
 		roleGroup.POST("", m.Handler.CreateRole)
 		roleGroup.GET("", m.Handler.GetAllRoles)
+		roleGroup.POST("/bulkdelete", m.Handler.DeleteRoleByIDs)
 		roleGroup.GET("/:id", m.Handler.GetRoleByID)
 		roleGroup.PUT("/:id", m.Handler.UpdateRole)
 		roleGroup.DELETE("/:id", m.Handler.DeleteRole)

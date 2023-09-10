@@ -2,6 +2,7 @@ package repository
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 
@@ -16,11 +17,15 @@ type SQLRoleRepository struct {
 	DB *sqlx.DB
 }
 
-func NewSQLRoleRepository(conn drivers.Connection) *SQLRoleRepository {
-	return &SQLRoleRepository{DB: conn.GetDB()}
+func NewSQLRoleRepository(conn drivers.Connection) (RoleRepository, error) {
+	db := conn.GetDB()
+	if db == nil {
+		return nil, errors.New("failed to get database connection")
+	}
+	return &SQLRoleRepository{DB: conn.GetDB()}, nil
 }
 
-func (r *SQLRoleRepository) getFilterQueryWithArgs(page int, pageSize int, sort string, filter role.RoleFilterDto) (string, map[string]interface{}) {
+func (r *SQLRoleRepository) getFilterQueryWithArgs(page int, pageSize int, sort string, filter *role.RoleFilterDto) (string, map[string]interface{}) {
 	var queryBuffer bytes.Buffer
 	args := make(map[string]interface{})
 
@@ -52,7 +57,7 @@ func (r *SQLRoleRepository) getFilterQueryWithArgs(page int, pageSize int, sort 
 	return queryBuffer.String(), args
 }
 
-func (r *SQLRoleRepository) GetTotalCount(filter role.RoleFilterDto) (int, error) {
+func (r *SQLRoleRepository) GetTotalCount(filter *role.RoleFilterDto) (int, error) {
 	var count int
 	var queryBuffer bytes.Buffer
 
@@ -74,7 +79,7 @@ func (r *SQLRoleRepository) GetTotalCount(filter role.RoleFilterDto) (int, error
 	return count, nil
 }
 
-func (r *SQLRoleRepository) GetAll(page int, pageSize int, sort string, filter role.RoleFilterDto) ([]*domain.Role, error) {
+func (r *SQLRoleRepository) GetAll(page int, pageSize int, sort string, filter *role.RoleFilterDto) ([]*domain.Role, error) {
 	roles := make([]*domain.Role, 0)
 	var queryBuffer bytes.Buffer
 
@@ -197,6 +202,24 @@ func (r *SQLRoleRepository) Update(role *domain.Role) error {
 
 func (r *SQLRoleRepository) Delete(roleID int64) error {
 	_, err := r.DB.Exec("UPDATE roles SET deleted_at = NOW() WHERE id = ?", roleID)
+	return err
+}
+
+func (r *SQLRoleRepository) DeleteByIDs(roleIDs []int64) error {
+	if len(roleIDs) == 0 {
+		return nil
+	}
+
+	query := "UPDATE roles SET deleted_at = NOW() WHERE id IN (?)"
+	query, args, err := sqlx.In(query, roleIDs)
+
+	if err != nil {
+		return err
+	}
+
+	query = r.DB.Rebind(query)
+
+	_, err = r.DB.Exec(query, args...)
 	return err
 }
 

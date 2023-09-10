@@ -16,8 +16,8 @@ func NewUserConverter(roleConv *RoleConverter) *UserConverter {
 	return &UserConverter{roleConverter: roleConv}
 }
 
-func (c *UserConverter) ToMinimalDto(domainUser *domain.User) user.UserMinimalDto {
-	userDto := user.UserMinimalDto{
+func (c *UserConverter) ToMinimalDto(domainUser *domain.User) *user.UserMinimalDto {
+	userDto := &user.UserMinimalDto{
 		ID:      domainUser.ID,
 		Name:    domainUser.Name,
 		StaffID: customtypes.NewValidNullString(domainUser.StaffID),
@@ -27,8 +27,8 @@ func (c *UserConverter) ToMinimalDto(domainUser *domain.User) user.UserMinimalDt
 	return userDto
 }
 
-func (c *UserConverter) ToDto(domainUser *domain.User) user.UserDto {
-	userDto := user.UserDto{
+func (c *UserConverter) ToDto(domainUser *domain.User) *user.UserDto {
+	userDto := &user.UserDto{
 		ID:            domainUser.ID,
 		Name:          domainUser.Name,
 		Username:      customtypes.NewValidNullString(domainUser.Username),
@@ -46,7 +46,7 @@ func (c *UserConverter) ToDto(domainUser *domain.User) user.UserDto {
 	}
 
 	// Convert Roles from domain model to DTO
-	var roleDtos []role.RoleMinimalDto
+	var roleDtos []*role.RoleMinimalDto
 	for _, domainRole := range domainUser.Roles {
 		roleDtos = append(roleDtos, c.roleConverter.ToMinimalDto(domainRole))
 	}
@@ -55,15 +55,15 @@ func (c *UserConverter) ToDto(domainUser *domain.User) user.UserDto {
 	return userDto
 }
 
-func (c *UserConverter) ToDtoSlice(domainUsers []*domain.User) []user.UserDto {
-	var userDtos []user.UserDto
+func (c *UserConverter) ToDtoSlice(domainUsers []*domain.User) []*user.UserDto {
+	var userDtos []*user.UserDto
 	for _, domainUser := range domainUsers {
 		userDtos = append(userDtos, c.ToDto(domainUser))
 	}
 	return userDtos
 }
 
-func (c *UserConverter) ToDomain(userDto user.UserCreateDto) *domain.User {
+func (c *UserConverter) ToDomain(userDto *user.UserCreateDto) *domain.User {
 	domainUser := &domain.User{
 		Name:          userDto.Name,
 		Username:      userDto.Username.String,
@@ -86,7 +86,7 @@ func (c *UserConverter) ToDomain(userDto user.UserCreateDto) *domain.User {
 	return domainUser
 }
 
-func (c *UserConverter) ToUpdateDomain(domainUser *domain.User, userDto user.UserUpdateDto) {
+func (c *UserConverter) ToUpdateDomain(domainUser *domain.User, userDto *user.UserUpdateDto) {
 
 	if userDto.Name != "" {
 		domainUser.Name = userDto.Name

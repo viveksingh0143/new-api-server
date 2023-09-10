@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/vamika-digital/wms-api-server/core/base/dto"
+	"github.com/vamika-digital/wms-api-server/core/base/validators"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/dto/user"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/service"
 )
@@ -20,21 +20,21 @@ func NewUserHandler(s service.UserService) *UserRestHandler {
 }
 
 func (h *UserRestHandler) GetAllUsers(c *gin.Context) {
-	var filter user.UserFilterDto
-	if err := c.ShouldBindQuery(&filter); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var filter = &user.UserFilterDto{}
+	if err := c.ShouldBindQuery(filter); err != nil {
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 	var pageProps dto.PaginationProps
 	if err := c.ShouldBindQuery(&pageProps); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	pageNumber, rowsPerPage, sort := pageProps.GetValues()
 	data, totalCount, err := h.UserService.GetAllUsers(pageNumber, rowsPerPage, sort, filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusInternalServerError, err.Error(), nil))
 		return
 	}
 	pageResponse := dto.GetPaginatedRestResponse(data, totalCount, pageNumber, rowsPerPage)
@@ -42,20 +42,20 @@ func (h *UserRestHandler) GetAllUsers(c *gin.Context) {
 }
 
 func (h *UserRestHandler) CreateUser(c *gin.Context) {
-	var formDTO user.UserCreateDto
+	var formDTO = &user.UserCreateDto{}
 	if err := c.ShouldBindJSON(&formDTO); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
-	validate := validator.New()
-	if err := validate.Struct(formDTO); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := validators.Validate.Struct(formDTO); err != nil {
+		errors := validators.GetAllErrors(err, formDTO)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, "Please fill the form correctly", errors))
 		return
 	}
 
 	if err := h.UserService.CreateUser(formDTO); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusInternalServerError, err.Error(), nil))
 		return
 	}
 	c.Status(http.StatusCreated)
@@ -64,13 +64,13 @@ func (h *UserRestHandler) CreateUser(c *gin.Context) {
 func (h *UserRestHandler) GetUserByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	user, err := h.UserService.GetUserByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusNotFound, err.Error(), nil))
 		return
 	}
 	c.JSON(http.StatusOK, user)
@@ -80,24 +80,24 @@ func (h *UserRestHandler) GetUserByID(c *gin.Context) {
 func (handler *UserRestHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
-	var formDTO user.UserUpdateDto
+	var formDTO = &user.UserUpdateDto{}
 	if err := c.ShouldBindJSON(&formDTO); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
-	validate := validator.New()
-	if err := validate.Struct(formDTO); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := validators.Validate.Struct(formDTO); err != nil {
+		errors := validators.GetAllErrors(err, formDTO)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, "Please fill the form correctly", errors))
 		return
 	}
 
 	if err := handler.UserService.UpdateUser(id, formDTO); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusInternalServerError, err.Error(), nil))
 		return
 	}
 
@@ -109,12 +109,31 @@ func (handler *UserRestHandler) DeleteUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	if err := handler.UserService.DeleteUser(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusInternalServerError, err.Error(), nil))
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// DeleteUser deletes a role by its IDs
+func (handler *UserRestHandler) DeleteUserByIDs(c *gin.Context) {
+	formDTO := &dto.BatchDeleteDTO{}
+
+	// Bind JSON payload to formDTO
+	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	// Delete roles using UserService
+	if err := handler.UserService.DeleteUserByIDs(formDTO.IDs); err != nil {
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 

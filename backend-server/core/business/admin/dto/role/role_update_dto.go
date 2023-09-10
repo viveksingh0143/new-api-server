@@ -6,8 +6,8 @@ import (
 )
 
 type RoleUpdateDto struct {
-	Name          string                     `json:"name"`
-	Status        customtypes.StatusEnum     `json:"status"`
-	LastUpdatedBy customtypes.NullString     `json:"last_updated_by"`
-	Permissions   []permission.PermissionDto `json:"permissions"`
+	Name          string                      `json:"name"`
+	Status        customtypes.StatusEnum      `json:"status"`
+	LastUpdatedBy customtypes.NullString      `json:"last_updated_by"`
+	Permissions   []*permission.PermissionDto `json:"permissions"`
 }

@@ -20,7 +20,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vamika-digital/wms-api-server/config"
+	"github.com/vamika-digital/wms-api-server/config/mainconfig"
+	"github.com/vamika-digital/wms-api-server/core/base/validators"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -31,7 +32,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(config.InitConfig)
+	cobra.OnInitialize(validators.InitValidator, mainconfig.InitConfig)
 }
 
 func Execute() {
