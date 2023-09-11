@@ -22,6 +22,22 @@ func InitValidator() {
 		panic("Failed to register LoginViaEnum validation")
 	}
 
+	if err := Validate.RegisterValidation("ContainerType", customtypes.ValidateContainerType); err != nil {
+		panic("Failed to register ContainerType validation")
+	}
+
+	if err := Validate.RegisterValidation("ProductType", customtypes.ValidateProductType); err != nil {
+		panic("Failed to register ProductType validation")
+	}
+
+	if err := Validate.RegisterValidation("UnitType", customtypes.ValidateUnitType); err != nil {
+		panic("Failed to register UnitType validation")
+	}
+
+	if err := Validate.RegisterValidation("UnitWeightType", customtypes.ValidateUnitWeightType); err != nil {
+		panic("Failed to register UnitWeightType validation")
+	}
+
 	if err := Validate.RegisterValidation("StatusEnum", customtypes.ValidateStatusEnum); err != nil {
 		panic("Failed to register StatusEnum validation")
 	}

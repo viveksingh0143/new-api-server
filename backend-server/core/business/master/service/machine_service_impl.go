@@ -16,7 +16,7 @@ func NewMachineService(machineRepo repository.MachineRepository, machineConverte
 	return &MachineServiceImpl{MachineRepo: machineRepo, MachineConverter: machineConverter}
 }
 
-func (s *MachineServiceImpl) GetAllMachines(page int64, pageSize int64, sort string, filter *machine.MachineFilterDto) ([]*machine.MachineDto, int64, error) {
+func (s *MachineServiceImpl) GetAllMachines(page int16, pageSize int16, sort string, filter *machine.MachineFilterDto) ([]*machine.MachineDto, int64, error) {
 	totalCount, err := s.MachineRepo.GetTotalCount(filter)
 	if err != nil {
 		return nil, 0, err

@@ -5,6 +5,7 @@ import (
 	"github.com/vamika-digital/wms-api-server/core/business/admin/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/dto/user"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/repository"
+	"github.com/vamika-digital/wms-api-server/core/business/admin/service"
 )
 
 type UserServiceImpl struct {
@@ -13,7 +14,7 @@ type UserServiceImpl struct {
 	UserConverter *converter.UserConverter
 }
 
-func NewUserService(userRepo repository.UserRepository, roleRepo repository.RoleRepository, userConverter *converter.UserConverter) UserService {
+func NewUserService(userRepo repository.UserRepository, roleRepo repository.RoleRepository, userConverter *converter.UserConverter) service.UserService {
 	return &UserServiceImpl{UserRepo: userRepo, RoleRepo: roleRepo, UserConverter: userConverter}
 }
 

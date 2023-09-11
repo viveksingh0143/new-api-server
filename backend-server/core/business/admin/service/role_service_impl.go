@@ -17,7 +17,7 @@ func NewRoleService(roleRepo repository.RoleRepository, permissionRepo repositor
 	return &RoleServiceImpl{RoleRepo: roleRepo, PermissionRepo: permissionRepo, RoleConverter: roleConverter}
 }
 
-func (s *RoleServiceImpl) GetAllRoles(page int64, pageSize int64, sort string, filter *role.RoleFilterDto) ([]*role.RoleDto, int64, error) {
+func (s *RoleServiceImpl) GetAllRoles(page int16, pageSize int16, sort string, filter *role.RoleFilterDto) ([]*role.RoleDto, int64, error) {
 	totalCount, err := s.RoleRepo.GetTotalCount(filter)
 	if err != nil {
 		return nil, 0, err

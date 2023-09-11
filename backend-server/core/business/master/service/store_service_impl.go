@@ -19,7 +19,7 @@ func NewStoreService(storeRepo masterRepository.StoreRepository, userRepo adminR
 	return &StoreServiceImpl{StoreRepo: storeRepo, UserRepo: userRepo, StoreConverter: storeConverter}
 }
 
-func (s *StoreServiceImpl) GetAllStores(page int64, pageSize int64, sort string, filter *store.StoreFilterDto) ([]*store.StoreDto, int64, error) {
+func (s *StoreServiceImpl) GetAllStores(page int16, pageSize int16, sort string, filter *store.StoreFilterDto) ([]*store.StoreDto, int64, error) {
 	totalCount, err := s.StoreRepo.GetTotalCount(filter)
 	if err != nil {
 		return nil, 0, err

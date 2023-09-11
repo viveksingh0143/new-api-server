@@ -1,25 +1,23 @@
 package dto
 
-import "github.com/vamika-digital/wms-api-server/core/base/customtypes"
-
 type PaginationProps struct {
-	PageNumber customtypes.NullInt64  `schema:"page"`
-	PageSize   customtypes.NullInt64  `schema:"pageSize"`
-	Sort       customtypes.NullString `schema:"sort"`
+	PageNumber int16  `form:"page"`
+	PageSize   int16  `form:"pageSize"`
+	Sort       string `form:"sort"`
 }
 
-func (props PaginationProps) GetValues() (int64, int64, string) {
-	var page int64 = 1
-	var pageSize int64 = 10
+func (props PaginationProps) GetValues() (int16, int16, string) {
+	var page int16 = 1
+	var pageSize int16 = 10
 	var sort string = ""
-	if props.PageNumber.Valid {
-		page = props.PageNumber.Int64
+	if props.PageNumber > 0 {
+		page = props.PageNumber
 	}
-	if props.PageSize.Valid {
-		pageSize = props.PageSize.Int64
+	if props.PageSize > 0 {
+		pageSize = props.PageSize
 	}
-	if props.Sort.Valid {
-		sort = props.Sort.String
+	if props.Sort != "" {
+		sort = props.Sort
 	}
 	return page, pageSize, sort
 }

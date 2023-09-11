@@ -16,7 +16,7 @@ func NewCustomerService(customerRepo repository.CustomerRepository, customerConv
 	return &CustomerServiceImpl{CustomerRepo: customerRepo, CustomerConverter: customerConverter}
 }
 
-func (s *CustomerServiceImpl) GetAllCustomers(page int64, pageSize int64, sort string, filter *customer.CustomerFilterDto) ([]*customer.CustomerDto, int64, error) {
+func (s *CustomerServiceImpl) GetAllCustomers(page int16, pageSize int16, sort string, filter *customer.CustomerFilterDto) ([]*customer.CustomerDto, int64, error) {
 	totalCount, err := s.CustomerRepo.GetTotalCount(filter)
 	if err != nil {
 		return nil, 0, err

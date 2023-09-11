@@ -14,12 +14,14 @@ import (
 )
 
 type Container struct {
-	RoleService     adminService.RoleService
-	UserService     adminService.UserService
-	AuthService     authService.AuthService
-	MachineService  masterService.MachineService
-	CustomerService masterService.CustomerService
-	StoreService    masterService.StoreService
+	RoleService      adminService.RoleService
+	UserService      adminService.UserService
+	AuthService      authService.AuthService
+	MachineService   masterService.MachineService
+	CustomerService  masterService.CustomerService
+	StoreService     masterService.StoreService
+	ContainerService masterService.ContainerService
+	ProductService   masterService.ProductService
 }
 
 var (
@@ -64,12 +66,24 @@ func (c *Container) initialize(db drivers.Connection) error {
 		return err
 	}
 
+	containerRepo, err := masterRepository.NewSQLContainerRepository(db)
+	if err != nil {
+		return err
+	}
+
+	productRepo, err := masterRepository.NewSQLProductRepository(db)
+	if err != nil {
+		return err
+	}
+
 	roleConverter := adminConverter.NewRoleConverter()
 	userConverter := adminConverter.NewUserConverter(roleConverter)
 
 	machineConverter := masterConverter.NewMachineConverter()
 	customerConverter := masterConverter.NewCustomerConverter()
 	storeConverter := masterConverter.NewStoreConverter(userConverter)
+	containerConverter := masterConverter.NewContainerConverter()
+	productConverter := masterConverter.NewProductConverter()
 
 	c.RoleService = adminService.NewRoleService(roleRepo, permissionRepo, roleConverter)
 	c.UserService = adminService.NewUserService(userRepo, roleRepo, userConverter)
@@ -77,5 +91,7 @@ func (c *Container) initialize(db drivers.Connection) error {
 	c.CustomerService = masterService.NewCustomerService(customerRepo, customerConverter)
 	c.MachineService = masterService.NewMachineService(machineRepo, machineConverter)
 	c.StoreService = masterService.NewStoreService(storeRepo, userRepo, storeConverter)
+	c.ContainerService = masterService.NewContainerService(containerRepo, containerConverter)
+	c.ProductService = masterService.NewProductService(productRepo, productConverter)
 	return nil
 }

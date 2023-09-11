@@ -9,13 +9,13 @@ type PaginatedResponse struct {
 	Status     int         `json:"status"`
 	Data       interface{} `json:"data"`
 	TotalItems int64       `json:"total_items"`
-	Page       int64       `json:"page"`
-	PageSize   int64       `json:"page_size"`
-	TotalPages int64       `json:"total_pages"`
+	Page       int16       `json:"page"`
+	PageSize   int16       `json:"page_size"`
+	TotalPages int16       `json:"total_pages"`
 }
 
-func GetPaginatedRestResponse(data interface{}, totalItems int64, pageNumber int64, rowsPerPage int64) PaginatedResponse {
-	totalPages := int64(math.Ceil(float64(totalItems) / float64(rowsPerPage)))
+func GetPaginatedRestResponse(data interface{}, totalItems int64, pageNumber int16, rowsPerPage int16) PaginatedResponse {
+	totalPages := int16(math.Ceil(float64(totalItems) / float64(rowsPerPage)))
 	return PaginatedResponse{
 		Status:     http.StatusOK,
 		Data:       data,
