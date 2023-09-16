@@ -14,7 +14,7 @@ type Product struct {
 	Name           string                     `db:"name" json:"name"`
 	Description    string                     `db:"description" json:"description"`
 	UnitType       customtypes.UnitType       `db:"unit_type" json:"unit_type"`
-	UnitWeight     float32                    `db:"unit_weight" json:"unit_weight"`
+	UnitWeight     float64                    `db:"unit_weight" json:"unit_weight"`
 	UnitWeightType customtypes.UnitWeightType `db:"unit_weight_type" json:"unit_weight_type"`
 	Status         customtypes.StatusEnum     `db:"status" json:"status"`
 	CreatedAt      time.Time                  `db:"created_at" json:"created_at"`

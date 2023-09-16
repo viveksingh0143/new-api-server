@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 	"strconv"
 	"time"
 
@@ -27,6 +28,7 @@ func NewAuthService(userRepository adminRepository.UserRepository, userConverter
 func (service *AuthServiceImpl) GetUserById(idStr string) (*user.UserDto, error) {
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, errors.New("invalid datatype")
 	}
 
@@ -34,6 +36,7 @@ func (service *AuthServiceImpl) GetUserById(idStr string) (*user.UserDto, error)
 	domainUser, err = service.userRepository.GetById(userID)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -47,26 +50,31 @@ func (service *AuthServiceImpl) ValidateCredentials(username string, password st
 	if loginVia == nil || loginVia.ViaEmail() {
 		domainUser, err = service.userRepository.GetByEmail(username)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return nil, err
 		}
 	} else if loginVia == nil || loginVia.ViaStaffID() {
 		domainUser, err = service.userRepository.GetByStaffID(username)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return nil, err
 		}
 	} else if loginVia == nil || loginVia.ViaUsername() {
 		domainUser, err = service.userRepository.GetByUsername(username)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return nil, err
 		}
 	}
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(domainUser.Password), []byte(password))
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	loginUser := service.userConverter.ToDto(domainUser)

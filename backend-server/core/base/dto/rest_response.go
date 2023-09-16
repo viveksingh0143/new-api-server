@@ -15,3 +15,18 @@ func GetErrorRestResponse(status int, message string, errors []*IError) RestResp
 		Data:    nil,
 	}
 }
+
+func GetRestResponse(status int, message string) RestResponse {
+	return RestResponse{
+		Status:  status,
+		Message: message,
+	}
+}
+
+func GetRestDataResponse(status int, message string, data interface{}) RestResponse {
+	return RestResponse{
+		Status:  status,
+		Message: message,
+		Data:    data,
+	}
+}

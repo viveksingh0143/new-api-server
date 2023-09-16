@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/domain"
@@ -82,11 +83,13 @@ func (r *SQLUserRepository) GetTotalCount(filter *user.UserFilterDto) (int, erro
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
 	err = namedQuery.Get(&count, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
@@ -104,11 +107,13 @@ func (r *SQLUserRepository) GetAll(page int, pageSize int, sort string, filter *
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&users, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -120,6 +125,7 @@ func (r *SQLUserRepository) Create(user *domain.User) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE username = ?", user.Username)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -131,6 +137,7 @@ func (r *SQLUserRepository) Create(user *domain.User) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE email = ?", user.EMail)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -142,6 +149,7 @@ func (r *SQLUserRepository) Create(user *domain.User) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE staff_id = ?", user.StaffID)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -151,18 +159,21 @@ func (r *SQLUserRepository) Create(user *domain.User) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	query := `INSERT INTO users (name, username, password, staff_id, email, status, last_updated_by) VALUES(:name, :username, :password, :staff_id, :email, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, user)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
@@ -194,12 +205,14 @@ func (r *SQLUserRepository) GetByIds(userIDs []int64) ([]*domain.User, error) {
 	var users []*domain.User
 	query, args, err := sqlx.In("SELECT * FROM users WHERE id IN (?) AND deleted_at IS NULL", userIDs)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	query = r.DB.Rebind(query)
 	err = r.DB.Select(&users, query, args...)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -211,6 +224,7 @@ func (r *SQLUserRepository) Update(user *domain.User) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE username = ? AND id != ?", user.Username, user.ID)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -222,6 +236,7 @@ func (r *SQLUserRepository) Update(user *domain.User) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE email = ? AND id != ?", user.EMail, user.ID)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -233,6 +248,7 @@ func (r *SQLUserRepository) Update(user *domain.User) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE staff_id = ? AND id != ?", user.StaffID, user.ID)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -242,12 +258,14 @@ func (r *SQLUserRepository) Update(user *domain.User) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	query := "UPDATE users SET name=:name, username=:username, password=:password, staff_id=:staff_id, email=:email, email_confirmation_at=:email_confirmation_at, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
 	_, err = tx.NamedExec(query, user)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -255,6 +273,7 @@ func (r *SQLUserRepository) Update(user *domain.User) error {
 	query = "DELETE FROM roles_users WHERE user_id=?"
 	_, err = tx.Exec(query, user.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -306,6 +325,7 @@ func (r *SQLUserRepository) DeleteByIDs(userIDs []int64) error {
 	query, args, err := sqlx.In(query, userIDs)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 

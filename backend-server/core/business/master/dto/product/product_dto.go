@@ -12,7 +12,7 @@ type ProductDto struct {
 	Name           string                     `json:"name"`
 	Description    string                     `json:"description"`
 	UnitType       customtypes.UnitType       `json:"unit_type"`
-	UnitWeight     float32                    `json:"unit_weight"`
+	UnitWeight     float64                    `json:"unit_weight"`
 	UnitWeightType customtypes.UnitWeightType `json:"unit_weight_type"`
 	Status         customtypes.StatusEnum     `json:"status"`
 	CreatedAt      customtypes.NullTime       `json:"created_at"`

@@ -17,4 +17,5 @@ type ContainerDto struct {
 	MinCapacity   int64                         `json:"min_capacity"`
 	MaxCapacity   int64                         `json:"max_capacity"`
 	CanContains   []customtypes.ContainableType `json:"can_contains"`
+	Level         customtypes.StockLevel        `json:"stock_level"`
 }

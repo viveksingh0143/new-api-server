@@ -3,10 +3,17 @@ package customtypes
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 )
 
 type NullString struct {
 	sql.NullString
+}
+
+func NewNullString(value string) NullString {
+	return NullString{
+		sql.NullString{String: value, Valid: value == ""},
+	}
 }
 
 // Initialize a valid NullString
@@ -35,6 +42,7 @@ func (ns *NullString) MarshalJSON() ([]byte, error) {
 func (ns *NullString) UnmarshalJSON(data []byte) error {
 	var s *string
 	if err := json.Unmarshal(data, &s); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 

@@ -43,6 +43,14 @@ func (c *MachineConverter) ToDtoSlice(domainMachines []*domain.Machine) []*machi
 	return machineDtos
 }
 
+func (c *MachineConverter) ToMinimalDtoSlice(domainMachines []*domain.Machine) []*machine.MachineMinimalDto {
+	var machineDtos = make([]*machine.MachineMinimalDto, 0)
+	for _, domainMachine := range domainMachines {
+		machineDtos = append(machineDtos, c.ToMinimalDto(domainMachine))
+	}
+	return machineDtos
+}
+
 func (c *MachineConverter) ToDomain(machineDto *machine.MachineCreateDto) *domain.Machine {
 	domainMachine := &domain.Machine{
 		Code:          machineDto.Code,

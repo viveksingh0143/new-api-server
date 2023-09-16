@@ -15,12 +15,36 @@ const (
 	RACK_TYPE   ContainerType = "RACK"
 )
 
+func GetContainerTypeFromString(typeStr string) (ContainerType, error) {
+	str := strings.ToUpper(strings.Trim(typeStr, `"`))
+	switch str {
+	case "PALLET":
+		return PALLET_TYPE, nil
+	case "BIN":
+		return BIN_TYPE, nil
+	case "RACK":
+		return RACK_TYPE, nil
+	default:
+		return PALLET_TYPE, nil
+	}
+}
+
 func GetAllContainerTypes() []ContainerType {
 	return []ContainerType{PALLET_TYPE, BIN_TYPE, RACK_TYPE}
 }
 
 func (s ContainerType) IsValid() bool {
 	return s == PALLET_TYPE || s == BIN_TYPE || s == RACK_TYPE
+}
+
+func (s ContainerType) IsPalletType() bool {
+	return s == PALLET_TYPE
+}
+func (s ContainerType) IsBinType() bool {
+	return s == BIN_TYPE
+}
+func (s ContainerType) IsRackType() bool {
+	return s == RACK_TYPE
 }
 
 func (s ContainerType) String() string {

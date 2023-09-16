@@ -16,6 +16,14 @@ const (
 	Draft
 )
 
+func ValidateStatusEnum(fl validator.FieldLevel) bool {
+	rawValue, ok := fl.Field().Interface().(StatusEnum)
+	if !ok {
+		return false
+	}
+	return rawValue.IsValid()
+}
+
 func (s StatusEnum) IsValid() bool {
 	return s == Enable || s == Disable || s == Draft
 }
@@ -54,10 +62,8 @@ func (s StatusEnum) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + str + `"`), nil
 }
 
-// UnmarshalJSON for StatusEnum
-func (s *StatusEnum) UnmarshalJSON(data []byte) error {
-	str := strings.ToUpper(strings.Trim(string(data), `"`))
-	switch str {
+func (s *StatusEnum) FromString(str string) error {
+	switch strings.ToUpper(str) {
 	case "ENABLE":
 		*s = Enable
 	case "DISABLE":
@@ -70,10 +76,13 @@ func (s *StatusEnum) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func ValidateStatusEnum(fl validator.FieldLevel) bool {
-	rawValue, ok := fl.Field().Interface().(StatusEnum)
-	if !ok {
-		return false
-	}
-	return rawValue.IsValid()
+// UnmarshalJSON for StatusEnum
+func (s *StatusEnum) UnmarshalJSON(data []byte) error {
+	str := strings.Trim(string(data), `"`)
+	return s.FromString(str)
+}
+
+func (s *StatusEnum) UnmarshalText(text []byte) error {
+	str := string(text)
+	return s.FromString(str)
 }

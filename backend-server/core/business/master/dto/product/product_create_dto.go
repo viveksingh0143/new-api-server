@@ -11,7 +11,7 @@ type ProductCreateDto struct {
 	Name           string                     `json:"name" validate:"required"`
 	Description    string                     `json:"description"`
 	UnitType       customtypes.UnitType       `json:"unit_type" validate:"UnitType,required"`
-	UnitWeight     float32                    `json:"unit_weight"`
+	UnitWeight     float64                    `json:"unit_weight"`
 	UnitWeightType customtypes.UnitWeightType `json:"unit_weight_type" validate:"UnitWeightType,required"`
 	Status         customtypes.StatusEnum     `json:"status"`
 	LastUpdatedBy  customtypes.NullString     `json:"last_updated_by"`

@@ -1,6 +1,8 @@
 package converter
 
 import (
+	"log"
+
 	"github.com/vamika-digital/wms-api-server/core/base/customtypes"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/dto/role"
@@ -63,6 +65,14 @@ func (c *UserConverter) ToDtoSlice(domainUsers []*domain.User) []*user.UserDto {
 	return userDtos
 }
 
+func (c *UserConverter) ToMinimalDtoSlice(domainUsers []*domain.User) []*user.UserMinimalDto {
+	var userDtos = make([]*user.UserMinimalDto, 0)
+	for _, domainUser := range domainUsers {
+		userDtos = append(userDtos, c.ToMinimalDto(domainUser))
+	}
+	return userDtos
+}
+
 func (c *UserConverter) ToDomain(userDto *user.UserCreateDto) *domain.User {
 	domainUser := &domain.User{
 		Name:          userDto.Name,
@@ -74,6 +84,7 @@ func (c *UserConverter) ToDomain(userDto *user.UserCreateDto) *domain.User {
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userDto.Password), bcrypt.DefaultCost)
 	if err == nil {
+		log.Printf("%+v\n", err)
 		domainUser.Password = string(hashedPassword)
 	}
 
@@ -107,6 +118,7 @@ func (c *UserConverter) ToUpdateDomain(domainUser *domain.User, userDto *user.Us
 	if userDto.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userDto.Password), bcrypt.DefaultCost)
 		if err == nil {
+			log.Printf("%+v\n", err)
 			domainUser.Password = string(hashedPassword)
 		}
 	}

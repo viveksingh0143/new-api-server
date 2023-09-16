@@ -13,6 +13,9 @@ func NewProductConverter() *ProductConverter {
 }
 
 func (c *ProductConverter) ToMinimalDto(domainProduct *domain.Product) *product.ProductMinimalDto {
+	if domainProduct == nil {
+		return nil
+	}
 	productDto := &product.ProductMinimalDto{
 		ID:             domainProduct.ID,
 		ProductType:    domainProduct.ProductType,
@@ -51,6 +54,14 @@ func (c *ProductConverter) ToDtoSlice(domainProducts []*domain.Product) []*produ
 	var productDtos = make([]*product.ProductDto, 0)
 	for _, domainProduct := range domainProducts {
 		productDtos = append(productDtos, c.ToDto(domainProduct))
+	}
+	return productDtos
+}
+
+func (c *ProductConverter) ToMinimalDtoSlice(domainProducts []*domain.Product) []*product.ProductMinimalDto {
+	var productDtos = make([]*product.ProductMinimalDto, 0)
+	for _, domainProduct := range domainProducts {
+		productDtos = append(productDtos, c.ToMinimalDto(domainProduct))
 	}
 	return productDtos
 }

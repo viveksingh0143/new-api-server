@@ -14,6 +14,7 @@ type DBConfig struct {
 	Username string
 	Password string
 	DBName   string
+	LogQuery bool
 }
 
 var Cfg *DBConfig
@@ -26,6 +27,7 @@ func InitDBConfig() {
 		Username: viper.GetString("database.username"),
 		Password: viper.GetString("database.password"),
 		DBName:   viper.GetString("database.dbname"),
+		LogQuery: viper.GetBool("database.logquery"),
 	}
 }
 

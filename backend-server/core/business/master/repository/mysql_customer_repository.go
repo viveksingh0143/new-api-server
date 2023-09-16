@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
@@ -74,11 +75,13 @@ func (r *SQLCustomerRepository) GetTotalCount(filter *customer.CustomerFilterDto
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
 	err = namedQuery.Get(&count, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
@@ -96,11 +99,13 @@ func (r *SQLCustomerRepository) GetAll(page int, pageSize int, sort string, filt
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&customers, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -111,6 +116,7 @@ func (r *SQLCustomerRepository) Create(customer *domain.Customer) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM customers WHERE code = ?", customer.Code)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	if count > 0 {
@@ -119,18 +125,21 @@ func (r *SQLCustomerRepository) Create(customer *domain.Customer) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	query := `INSERT INTO customers (code, name, contact_person, billing_address_address1, billing_address_address2, billing_address_state, billing_address_country, billing_address_pincode, shipping_address_address1, shipping_address_address2, shipping_address_state, shipping_address_country, shipping_address_pincode, status, last_updated_by) VALUES(:code, :name, :contact_person, :billing_address_address1, :billing_address_address2, :billing_address_state, :billing_address_country, :billing_address_pincode, :shipping_address_address1, :shipping_address_address2, :shipping_address_state, :shipping_address_country, :shipping_address_pincode, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, customer)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
@@ -145,10 +154,29 @@ func (r *SQLCustomerRepository) GetById(customerID int64) (*domain.Customer, err
 	return customer, err
 }
 
+func (r *SQLCustomerRepository) GetByIds(customerIDs []int64) ([]*domain.Customer, error) {
+	var customers []*domain.Customer
+	query, args, err := sqlx.In("SELECT * FROM customers WHERE id IN (?) AND deleted_at IS NULL", customerIDs)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	query = r.DB.Rebind(query)
+	err = r.DB.Select(&customers, query, args...)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	return customers, nil
+}
+
 func (r *SQLCustomerRepository) Update(customer *domain.Customer) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM customers WHERE code = ? AND id != ?", customer.Code, customer.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	if count > 0 {
@@ -157,12 +185,14 @@ func (r *SQLCustomerRepository) Update(customer *domain.Customer) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	query := "UPDATE customers SET code=:code, name=:name, contact_person=:contact_person, billing_address_address1=:billing_address_address1, billing_address_address2=:billing_address_address2, billing_address_state=:billing_address_state, billing_address_country=:billing_address_country, billing_address_pincode=:billing_address_pincode, shipping_address_address1=:shipping_address_address1, shipping_address_address2=:shipping_address_address2, shipping_address_state=:shipping_address_state, shipping_address_country=:shipping_address_country, shipping_address_pincode=:shipping_address_pincode, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
 	_, err = tx.NamedExec(query, customer)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -184,6 +214,7 @@ func (r *SQLCustomerRepository) DeleteByIDs(customerIDs []int64) error {
 	query, args, err := sqlx.In(query, customerIDs)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 

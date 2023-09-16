@@ -1,6 +1,8 @@
 package service
 
 import (
+	"log"
+
 	"github.com/vamika-digital/wms-api-server/core/business/admin/converter"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/dto/role"
@@ -20,10 +22,12 @@ func NewRoleService(roleRepo repository.RoleRepository, permissionRepo repositor
 func (s *RoleServiceImpl) GetAllRoles(page int16, pageSize int16, sort string, filter *role.RoleFilterDto) ([]*role.RoleDto, int64, error) {
 	totalCount, err := s.RoleRepo.GetTotalCount(filter)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, 0, err
 	}
 	domainRoles, err := s.RoleRepo.GetAll(int(page), int(pageSize), sort, filter)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, 0, err
 	}
 	// Convert domain roles to DTOs. You can do this based on your requirements.
@@ -35,6 +39,7 @@ func (s *RoleServiceImpl) CreateRole(roleDto *role.RoleCreateDto) error {
 	var newRole *domain.Role = s.RoleConverter.ToDomain(roleDto)
 	err := s.RoleRepo.Create(newRole)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil
@@ -43,10 +48,12 @@ func (s *RoleServiceImpl) CreateRole(roleDto *role.RoleCreateDto) error {
 func (s *RoleServiceImpl) GetRoleByID(roleID int64) (*role.RoleDto, error) {
 	domainRole, err := s.RoleRepo.GetById(roleID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	permissions, err := s.PermissionRepo.GetAllByRoleId(domainRole.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	domainRole.Permissions = permissions
@@ -56,11 +63,13 @@ func (s *RoleServiceImpl) GetRoleByID(roleID int64) (*role.RoleDto, error) {
 func (s *RoleServiceImpl) UpdateRole(roleID int64, roleDto *role.RoleUpdateDto) error {
 	existingRole, err := s.RoleRepo.GetById(roleID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	s.RoleConverter.ToUpdateDomain(existingRole, roleDto)
 	if err := s.RoleRepo.Update(existingRole); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil
@@ -68,6 +77,7 @@ func (s *RoleServiceImpl) UpdateRole(roleID int64, roleDto *role.RoleUpdateDto) 
 
 func (s *RoleServiceImpl) DeleteRole(roleID int64) error {
 	if err := s.RoleRepo.Delete(roleID); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil
@@ -75,6 +85,7 @@ func (s *RoleServiceImpl) DeleteRole(roleID int64) error {
 
 func (s *RoleServiceImpl) DeleteRoleByIDs(roleIDs []int64) error {
 	if err := s.RoleRepo.DeleteByIDs(roleIDs); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil

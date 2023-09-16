@@ -11,6 +11,7 @@ type ProductRepository interface {
 	Delete(productID int64) error
 	DeleteByIDs(productIDs []int64) error
 	GetById(productID int64) (*domain.Product, error)
+	GetByIds(productIDs []int64) ([]*domain.Product, error)
 	GetByCode(productCode string) (*domain.Product, error)
 	GetTotalCount(filter *product.ProductFilterDto) (int, error)
 	GetAll(page int, pageSize int, sort string, filter *product.ProductFilterDto) ([]*domain.Product, error)

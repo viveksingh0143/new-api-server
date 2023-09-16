@@ -25,7 +25,7 @@ var serverCmd = &cobra.Command{
 		time.Local = location
 
 		// Create a database connection
-		dbConn, err := drivers.NewMySQLConnection(dbconfig.Cfg.Host, dbconfig.Cfg.Port, dbconfig.Cfg.Username, dbconfig.Cfg.Password, dbconfig.Cfg.DBName)
+		dbConn, err := drivers.NewMySQLConnection(dbconfig.Cfg.Host, dbconfig.Cfg.Port, dbconfig.Cfg.Username, dbconfig.Cfg.Password, dbconfig.Cfg.DBName, dbconfig.Cfg.LogQuery)
 		if err != nil {
 			log.Fatalf("Failed to connect to database: %s", err)
 			return

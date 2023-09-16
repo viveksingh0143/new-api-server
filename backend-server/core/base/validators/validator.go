@@ -3,6 +3,7 @@ package validators
 import (
 	"database/sql/driver"
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/go-playground/validator/v10"
@@ -16,7 +17,7 @@ var Validate *validator.Validate
 func InitValidator() {
 	Validate = validator.New()
 
-	Validate.RegisterCustomTypeFunc(ValidateValuer, customtypes.NullString{}, customtypes.NullInt64{}, customtypes.NullBool{}, customtypes.NullBool{}, customtypes.NullTime{}, customtypes.NullStatusEnum{})
+	Validate.RegisterCustomTypeFunc(ValidateValuer, customtypes.NullString{}, customtypes.NullInt64{}, customtypes.NullFloat64{}, customtypes.NullBool{}, customtypes.NullBool{}, customtypes.NullTime{}, customtypes.NullStatusEnum{})
 
 	if err := Validate.RegisterValidation("LoginViaEnum", customtypes.ValidateLoginViaEnum); err != nil {
 		panic("Failed to register LoginViaEnum validation")
@@ -41,6 +42,10 @@ func InitValidator() {
 	if err := Validate.RegisterValidation("StatusEnum", customtypes.ValidateStatusEnum); err != nil {
 		panic("Failed to register StatusEnum validation")
 	}
+
+	if err := Validate.RegisterValidation("StockStatus", customtypes.ValidateStockStatus); err != nil {
+		panic("Failed to register StockStatus validation")
+	}
 }
 
 func NewValidator() *validator.Validate {
@@ -54,6 +59,7 @@ func ValidateValuer(field reflect.Value) interface{} {
 
 		val, err := valuer.Value()
 		if err == nil {
+			log.Printf("%+v\n", err)
 			return val
 		}
 	}

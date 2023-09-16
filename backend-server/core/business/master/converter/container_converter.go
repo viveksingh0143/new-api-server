@@ -34,6 +34,7 @@ func (c *ContainerConverter) ToDto(domainContainer *domain.Container) *container
 		CreatedAt:     customtypes.NewValidNullTime(domainContainer.CreatedAt),
 		UpdatedAt:     customtypes.GetNullTime(domainContainer.UpdatedAt),
 		LastUpdatedBy: domainContainer.LastUpdatedBy,
+		Level:         domainContainer.Level,
 	}
 	if containerDto.ContainerType == customtypes.PALLET_TYPE {
 		containerDto.MinCapacity = domain.PalletContainerInfo.MinCapacity
@@ -55,6 +56,14 @@ func (c *ContainerConverter) ToDtoSlice(domainContainers []*domain.Container) []
 	var containerDtos = make([]*container.ContainerDto, 0)
 	for _, domainContainer := range domainContainers {
 		containerDtos = append(containerDtos, c.ToDto(domainContainer))
+	}
+	return containerDtos
+}
+
+func (c *ContainerConverter) ToMinimalDtoSlice(domainContainers []*domain.Container) []*container.ContainerMinimalDto {
+	var containerDtos = make([]*container.ContainerMinimalDto, 0)
+	for _, domainContainer := range domainContainers {
+		containerDtos = append(containerDtos, c.ToMinimalDto(domainContainer))
 	}
 	return containerDtos
 }

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"log"
+
 	"github.com/vamika-digital/wms-api-server/core/business/admin/converter"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/dto/user"
@@ -20,10 +22,12 @@ func NewUserService(userRepo repository.UserRepository, roleRepo repository.Role
 func (s *UserServiceImpl) GetAllUsers(page int16, pageSize int16, sort string, filter *user.UserFilterDto) ([]*user.UserDto, int64, error) {
 	totalCount, err := s.UserRepo.GetTotalCount(filter)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, 0, err
 	}
 	domainUsers, err := s.UserRepo.GetAll(int(page), int(pageSize), sort, filter)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, 0, err
 	}
 	if len(domainUsers) > 0 {
@@ -34,6 +38,7 @@ func (s *UserServiceImpl) GetAllUsers(page int16, pageSize int16, sort string, f
 
 		userRolesMap, err := s.RoleRepo.GetRolesForUsers(userIds)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return nil, 0, err
 		}
 		for i, user := range domainUsers {
@@ -50,6 +55,7 @@ func (s *UserServiceImpl) GetAllUsers(page int16, pageSize int16, sort string, f
 func (s *UserServiceImpl) CreateUser(userDto *user.UserCreateDto) error {
 	var newUser *domain.User = s.UserConverter.ToDomain(userDto)
 	if err := s.UserRepo.Create(newUser); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil
@@ -58,25 +64,47 @@ func (s *UserServiceImpl) CreateUser(userDto *user.UserCreateDto) error {
 func (s *UserServiceImpl) GetUserByID(userID int64) (*user.UserDto, error) {
 	domainUser, err := s.UserRepo.GetById(userID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	roles, err := s.RoleRepo.GetRolesForUser(domainUser.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	domainUser.Roles = roles
 	return s.UserConverter.ToDto(domainUser), nil
 }
 
+func (s *UserServiceImpl) GetMinimalUserByID(userID int64) (*user.UserMinimalDto, error) {
+	domainUser, err := s.UserRepo.GetById(userID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+	return s.UserConverter.ToMinimalDto(domainUser), nil
+}
+
+func (s *UserServiceImpl) GetMinimalUserByIds(userIDs []int64) ([]*user.UserMinimalDto, error) {
+	domainUsers, err := s.UserRepo.GetByIds(userIDs)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+	return s.UserConverter.ToMinimalDtoSlice(domainUsers), nil
+}
+
 func (s *UserServiceImpl) UpdateUser(userID int64, userDto *user.UserUpdateDto) error {
 	existingUser, err := s.UserRepo.GetById(userID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	s.UserConverter.ToUpdateDomain(existingUser, userDto)
 	if err := s.UserRepo.Update(existingUser); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil
@@ -84,6 +112,7 @@ func (s *UserServiceImpl) UpdateUser(userID int64, userDto *user.UserUpdateDto) 
 
 func (s *UserServiceImpl) DeleteUser(userID int64) error {
 	if err := s.UserRepo.Delete(userID); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil
@@ -92,11 +121,13 @@ func (s *UserServiceImpl) DeleteUser(userID int64) error {
 func (s *UserServiceImpl) GetByUsername(username string) (*user.UserDto, error) {
 	domainUser, err := s.UserRepo.GetByUsername(username)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	roles, err := s.RoleRepo.GetRolesForUser(domainUser.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	domainUser.Roles = roles
@@ -106,11 +137,13 @@ func (s *UserServiceImpl) GetByUsername(username string) (*user.UserDto, error) 
 func (s *UserServiceImpl) GetByEmail(email string) (*user.UserDto, error) {
 	domainUser, err := s.UserRepo.GetByEmail(email)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	roles, err := s.RoleRepo.GetRolesForUser(domainUser.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	domainUser.Roles = roles
@@ -120,11 +153,13 @@ func (s *UserServiceImpl) GetByEmail(email string) (*user.UserDto, error) {
 func (s *UserServiceImpl) GetByStaffID(staffID string) (*user.UserDto, error) {
 	domainUser, err := s.UserRepo.GetByStaffID(staffID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	roles, err := s.RoleRepo.GetRolesForUser(domainUser.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	domainUser.Roles = roles
@@ -133,6 +168,7 @@ func (s *UserServiceImpl) GetByStaffID(staffID string) (*user.UserDto, error) {
 
 func (s *UserServiceImpl) DeleteUserByIDs(userIDs []int64) error {
 	if err := s.UserRepo.DeleteByIDs(userIDs); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	return nil

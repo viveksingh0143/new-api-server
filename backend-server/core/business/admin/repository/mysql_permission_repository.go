@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/domain"
@@ -30,11 +31,13 @@ func (r *SQLPermissionRepository) GetAllByRoleId(roleID int64) ([]*domain.Permis
 
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&permissions, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	return permissions, nil

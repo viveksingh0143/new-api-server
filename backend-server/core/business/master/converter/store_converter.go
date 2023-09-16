@@ -17,11 +17,15 @@ func NewStoreConverter(userConv *converter.UserConverter) *StoreConverter {
 }
 
 func (c *StoreConverter) ToMinimalDto(domainStore *domain.Store) *store.StoreMinimalDto {
+	if domainStore == nil {
+		return nil
+	}
 	storeDto := &store.StoreMinimalDto{
-		ID:     domainStore.ID,
-		Code:   domainStore.Code,
-		Name:   domainStore.Name,
-		Status: domainStore.Status,
+		ID:         domainStore.ID,
+		Code:       domainStore.Code,
+		Name:       domainStore.Name,
+		StoreTypes: domainStore.GetStoreTypes(),
+		Status:     domainStore.Status,
 	}
 	return storeDto
 }
@@ -32,6 +36,7 @@ func (c *StoreConverter) ToDto(domainStore *domain.Store) *store.StoreDto {
 		Code:          domainStore.Code,
 		Name:          domainStore.Name,
 		Location:      domainStore.Location,
+		StoreTypes:    domainStore.GetStoreTypes(),
 		Status:        domainStore.Status,
 		CreatedAt:     customtypes.NewValidNullTime(domainStore.CreatedAt),
 		UpdatedAt:     customtypes.GetNullTime(domainStore.UpdatedAt),
@@ -49,6 +54,14 @@ func (c *StoreConverter) ToDtoSlice(domainStores []*domain.Store) []*store.Store
 	return storeDtos
 }
 
+func (c *StoreConverter) ToMinimalDtoSlice(domainStores []*domain.Store) []*store.StoreMinimalDto {
+	var storeDtos = make([]*store.StoreMinimalDto, 0)
+	for _, domainStore := range domainStores {
+		storeDtos = append(storeDtos, c.ToMinimalDto(domainStore))
+	}
+	return storeDtos
+}
+
 func (c *StoreConverter) ToDomain(storeDto *store.StoreCreateDto) *domain.Store {
 	domainStore := &domain.Store{
 		Code:          storeDto.Code,
@@ -57,6 +70,7 @@ func (c *StoreConverter) ToDomain(storeDto *store.StoreCreateDto) *domain.Store 
 		Status:        storeDto.Status,
 		LastUpdatedBy: storeDto.LastUpdatedBy,
 	}
+	domainStore.SetStoreTypes(storeDto.StoreTypes)
 	if storeDto.Owner != nil && storeDto.Owner.ID != 0 {
 		domainStore.Owner = &adminDomain.User{ID: storeDto.Owner.ID}
 	}
@@ -67,6 +81,7 @@ func (c *StoreConverter) ToUpdateDomain(domainStore *domain.Store, storeDto *sto
 	domainStore.Code = storeDto.Code
 	domainStore.Name = storeDto.Name
 	domainStore.Location = storeDto.Location
+	domainStore.SetStoreTypes(storeDto.StoreTypes)
 	if storeDto.Status.IsValid() {
 		domainStore.Status = storeDto.Status
 	}

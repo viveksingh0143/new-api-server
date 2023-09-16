@@ -11,6 +11,7 @@ type StoreRepository interface {
 	Delete(storeID int64) error
 	DeleteByIDs(storeIDs []int64) error
 	GetById(storeID int64) (*domain.Store, error)
+	GetByIds(storeIDs []int64) ([]*domain.Store, error)
 	GetByCode(storeCode string) (*domain.Store, error)
 	GetTotalCount(filter *store.StoreFilterDto) (int, error)
 	GetAll(page int, pageSize int, sort string, filter *store.StoreFilterDto) ([]*domain.Store, error)

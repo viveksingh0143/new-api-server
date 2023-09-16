@@ -68,11 +68,13 @@ func (r *SQLRoleRepository) GetTotalCount(filter *role.RoleFilterDto) (int, erro
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
 	err = namedQuery.Get(&count, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
@@ -90,11 +92,13 @@ func (r *SQLRoleRepository) GetAll(page int, pageSize int, sort string, filter *
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&roles, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -105,6 +109,7 @@ func (r *SQLRoleRepository) Create(role *domain.Role) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM roles WHERE name = ?", role.Name)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	if count > 0 {
@@ -113,6 +118,7 @@ func (r *SQLRoleRepository) Create(role *domain.Role) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -120,12 +126,14 @@ func (r *SQLRoleRepository) Create(role *domain.Role) error {
 	query := `INSERT INTO roles (name, status, last_updated_by) VALUES (:name, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, role)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
@@ -160,6 +168,7 @@ func (r *SQLRoleRepository) Update(role *domain.Role) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM roles WHERE name = ? AND id != ?", role.Name, role.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -169,6 +178,7 @@ func (r *SQLRoleRepository) Update(role *domain.Role) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -176,6 +186,7 @@ func (r *SQLRoleRepository) Update(role *domain.Role) error {
 
 	_, err = tx.NamedExec(query, role)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -183,6 +194,7 @@ func (r *SQLRoleRepository) Update(role *domain.Role) error {
 	query = "DELETE FROM permissions WHERE role_id=?"
 	_, err = tx.Exec(query, role.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -192,6 +204,7 @@ func (r *SQLRoleRepository) Update(role *domain.Role) error {
 		query = "INSERT INTO permissions (role_id, module_name, create_perm, read_perm, update_perm, delete_perm, export_perm, import_perm) VALUES (:role_id, :module_name, :create_perm, :read_perm, :update_perm, :delete_perm, :export_perm, :import_perm)"
 		_, err := tx.NamedExec(query, &permission)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			tx.Rollback()
 			return err
 		}
@@ -214,6 +227,7 @@ func (r *SQLRoleRepository) DeleteByIDs(roleIDs []int64) error {
 	query, args, err := sqlx.In(query, roleIDs)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -228,6 +242,7 @@ func (r *SQLRoleRepository) GetRolesForUser(userID int64) ([]*domain.Role, error
 	query := `SELECT roles.* FROM roles JOIN roles_users ON roles.id = roles_users.role_id WHERE roles_users.user_id = ?`
 	err := r.DB.Select(&roles, query, userID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		log.Printf("Error fetching roles for user %d: %v\n", userID, err)
 		return nil, err
 	}
@@ -240,6 +255,7 @@ func (r *SQLRoleRepository) GetRolesForUsers(userIDs []int64) (map[int64][]*doma
 	query := `SELECT ur.user_id, r.id, r.name, r.status FROM roles_users ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id IN (?)`
 	query, args, err := sqlx.In(query, userIDs)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -252,6 +268,7 @@ func (r *SQLRoleRepository) GetRolesForUsers(userIDs []int64) (map[int64][]*doma
 	}
 
 	if err := r.DB.Select(&roles, query, args...); err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 

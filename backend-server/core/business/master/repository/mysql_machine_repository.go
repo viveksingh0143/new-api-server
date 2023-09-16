@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
@@ -76,11 +77,13 @@ func (r *SQLMachineRepository) GetTotalCount(filter *machine.MachineFilterDto) (
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
 	err = namedQuery.Get(&count, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
@@ -98,11 +101,13 @@ func (r *SQLMachineRepository) GetAll(page int, pageSize int, sort string, filte
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&machines, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -113,6 +118,7 @@ func (r *SQLMachineRepository) Create(machine *domain.Machine) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM machines WHERE code = ?", machine.Code)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	if count > 0 {
@@ -121,6 +127,7 @@ func (r *SQLMachineRepository) Create(machine *domain.Machine) error {
 
 	err = r.DB.Get(&count, "SELECT COUNT(*) FROM machines WHERE name = ?", machine.Name)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	if count > 0 {
@@ -129,6 +136,7 @@ func (r *SQLMachineRepository) Create(machine *domain.Machine) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -136,12 +144,14 @@ func (r *SQLMachineRepository) Create(machine *domain.Machine) error {
 	query := `INSERT INTO machines (code, name, status, last_updated_by) VALUES (:code, :name, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, machine)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
@@ -154,6 +164,24 @@ func (r *SQLMachineRepository) GetById(machineID int64) (*domain.Machine, error)
 	machine := &domain.Machine{}
 	err := r.DB.Get(machine, "SELECT * FROM machines WHERE id = ? AND deleted_at IS NULL", machineID)
 	return machine, err
+}
+
+func (r *SQLMachineRepository) GetByIds(machineIDs []int64) ([]*domain.Machine, error) {
+	var machines []*domain.Machine
+	query, args, err := sqlx.In("SELECT * FROM machines WHERE id IN (?) AND deleted_at IS NULL", machineIDs)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	query = r.DB.Rebind(query)
+	err = r.DB.Select(&machines, query, args...)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	return machines, nil
 }
 
 func (r *SQLMachineRepository) GetByCode(machineCode string) (*domain.Machine, error) {
@@ -172,6 +200,7 @@ func (r *SQLMachineRepository) Update(machine *domain.Machine) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM machines WHERE code = ? AND id != ?", machine.Code, machine.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -181,6 +210,7 @@ func (r *SQLMachineRepository) Update(machine *domain.Machine) error {
 
 	err = r.DB.Get(&count, "SELECT COUNT(*) FROM machines WHERE name = ? AND id != ?", machine.Name, machine.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -190,6 +220,7 @@ func (r *SQLMachineRepository) Update(machine *domain.Machine) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -197,6 +228,7 @@ func (r *SQLMachineRepository) Update(machine *domain.Machine) error {
 
 	_, err = tx.NamedExec(query, machine)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -218,6 +250,7 @@ func (r *SQLMachineRepository) DeleteByIDs(machineIDs []int64) error {
 	query, args, err := sqlx.In(query, machineIDs)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 

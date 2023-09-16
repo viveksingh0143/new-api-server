@@ -1,5 +1,6 @@
 application:
   timezone: Asia/Kolkata
+  debug: true
 auth:
   expiryduration: 3600
   expirylongduration: 2592000
@@ -13,4 +14,5 @@ database:
   port: 3306
   username: owner
   password: owner
-  dbname: new_wms
+  dbname: wms
+  logquery: true

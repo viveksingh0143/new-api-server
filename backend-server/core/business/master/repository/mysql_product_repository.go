@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
@@ -32,19 +34,32 @@ func (r *SQLProductRepository) getFilterQueryWithArgs(page int, pageSize int, so
 		args["query"] = "%" + filter.Query + "%"
 	}
 
+	if filter.ProductTypes != "" {
+		productTypesFilter := strings.Split(filter.ProductTypes, ",")
+		if len(productTypesFilter) > 0 {
+			placeholders := make([]string, len(productTypesFilter))
+			for i, pt := range productTypesFilter {
+				key := fmt.Sprintf("product_type%d", i+1)
+				placeholders[i] = fmt.Sprintf(":%s", key)
+				args[key] = pt
+			}
+			queryBuffer.WriteString(fmt.Sprintf(" AND product_type IN (%s)", strings.Join(placeholders, ",")))
+		}
+	}
+
 	if filter.ID != 0 {
 		queryBuffer.WriteString(" AND id = :id")
 		args["id"] = filter.ID
 	}
 
 	if filter.Code != "" {
-		queryBuffer.WriteString(" AND code LIKE :code")
-		args["code"] = "%" + filter.Code + "%"
+		queryBuffer.WriteString(" AND code=:code")
+		args["code"] = filter.Code
 	}
 
 	if filter.LinkCode != "" {
-		queryBuffer.WriteString(" AND link_code LIKE :code")
-		args["link_code"] = "%" + filter.LinkCode + "%"
+		queryBuffer.WriteString(" AND link_code=:code")
+		args["link_code"] = filter.LinkCode
 	}
 
 	if filter.Name != "" {
@@ -86,11 +101,13 @@ func (r *SQLProductRepository) GetTotalCount(filter *product.ProductFilterDto) (
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
 	err = namedQuery.Get(&count, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
@@ -108,11 +125,13 @@ func (r *SQLProductRepository) GetAll(page int, pageSize int, sort string, filte
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&products, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -123,6 +142,7 @@ func (r *SQLProductRepository) Create(product *domain.Product) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM products WHERE code = ?", product.Code)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 	if count > 0 {
@@ -131,6 +151,7 @@ func (r *SQLProductRepository) Create(product *domain.Product) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -138,12 +159,14 @@ func (r *SQLProductRepository) Create(product *domain.Product) error {
 	query := `INSERT INTO products (product_type, code, link_code, name, description, unit_type, unit_weight, unit_weight_type, status, last_updated_by) VALUES (:product_type, :code, :link_code, :name, :description, :unit_type, :unit_weight, :unit_weight_type, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, product)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
@@ -158,6 +181,24 @@ func (r *SQLProductRepository) GetById(productID int64) (*domain.Product, error)
 	return product, err
 }
 
+func (r *SQLProductRepository) GetByIds(productIDs []int64) ([]*domain.Product, error) {
+	var products []*domain.Product
+	query, args, err := sqlx.In("SELECT * FROM products WHERE id IN (?) AND deleted_at IS NULL", productIDs)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	query = r.DB.Rebind(query)
+	err = r.DB.Select(&products, query, args...)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	return products, nil
+}
+
 func (r *SQLProductRepository) GetByCode(productCode string) (*domain.Product, error) {
 	product := &domain.Product{}
 	err := r.DB.Get(product, "SELECT * FROM products WHERE code = ? AND deleted_at IS NULL", productCode)
@@ -168,6 +209,7 @@ func (r *SQLProductRepository) Update(product *domain.Product) error {
 	var count int
 	err := r.DB.Get(&count, "SELECT COUNT(*) FROM products WHERE code = ? AND id != ?", product.Code, product.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -177,12 +219,14 @@ func (r *SQLProductRepository) Update(product *domain.Product) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	query := "UPDATE products SET product_type=:product_type, link_code=:link_code, name=:name, description=:description, unit_type=:unit_type, unit_weight=:unit_weight, unit_weight_type=:unit_weight_type, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
 	_, err = tx.NamedExec(query, product)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -204,6 +248,7 @@ func (r *SQLProductRepository) DeleteByIDs(productIDs []int64) error {
 	query, args, err := sqlx.In(query, productIDs)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 

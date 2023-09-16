@@ -3,6 +3,9 @@ package customtypes
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"log"
+
+	"github.com/gin-gonic/gin"
 )
 
 type NullStatusEnum struct {
@@ -46,6 +49,7 @@ func (nse *NullStatusEnum) UnmarshalJSON(data []byte) error {
 
 	// Try to unmarshal into the temporary pointer
 	if err := json.Unmarshal(data, &temp); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -59,4 +63,9 @@ func (nse *NullStatusEnum) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func (nse *NullStatusEnum) Bind(ctx *gin.Context) error {
+	value := ctx.DefaultQuery("status", "")
+	return nse.Status.FromString(value)
 }

@@ -10,6 +10,7 @@ type StoreDto struct {
 	Code          string                 `json:"code"`
 	Name          string                 `json:"name"`
 	Location      string                 `json:"location"`
+	StoreTypes    []string               `json:"store_types"`
 	Owner         *user.UserMinimalDto   `json:"owner"`
 	Status        customtypes.StatusEnum `json:"status"`
 	CreatedAt     customtypes.NullTime   `json:"created_at"`

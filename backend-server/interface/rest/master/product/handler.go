@@ -1,6 +1,7 @@
 package product
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -22,11 +23,13 @@ func NewProductHandler(s service.ProductService) *ProductRestHandler {
 func (h *ProductRestHandler) GetAllProducts(c *gin.Context) {
 	var filter = &product.ProductFilterDto{}
 	if err := c.ShouldBindQuery(&filter); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 	var pageProps dto.PaginationProps
 	if err := c.ShouldBindQuery(&pageProps); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
@@ -34,6 +37,7 @@ func (h *ProductRestHandler) GetAllProducts(c *gin.Context) {
 	pageNumber, rowsPerPage, sort := pageProps.GetValues()
 	data, totalCount, err := h.ProductService.GetAllProducts(pageNumber, rowsPerPage, sort, filter)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
@@ -44,17 +48,20 @@ func (h *ProductRestHandler) GetAllProducts(c *gin.Context) {
 func (h *ProductRestHandler) CreateProduct(c *gin.Context) {
 	var formDTO = &product.ProductCreateDto{}
 	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	if err := validators.Validate.Struct(formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		errors := validators.GetAllErrors(err, formDTO)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, "Please fill the form correctly", errors))
 		return
 	}
 
 	if err := h.ProductService.CreateProduct(formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
@@ -64,12 +71,14 @@ func (h *ProductRestHandler) CreateProduct(c *gin.Context) {
 func (h *ProductRestHandler) GetProductByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	product, err := h.ProductService.GetProductByID(id)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusNotFound, "Resource not found", nil))
 		return
 	}
@@ -80,23 +89,27 @@ func (h *ProductRestHandler) GetProductByID(c *gin.Context) {
 func (handler *ProductRestHandler) UpdateProduct(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	var formDTO = &product.ProductUpdateDto{}
 	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	if err := validators.Validate.Struct(formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		errors := validators.GetAllErrors(err, formDTO)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, "Please fill the form correctly", errors))
 		return
 	}
 
 	if err := handler.ProductService.UpdateProduct(id, formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
@@ -109,11 +122,13 @@ func (handler *ProductRestHandler) DeleteProduct(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	if err := handler.ProductService.DeleteProduct(id); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
@@ -127,12 +142,14 @@ func (handler *ProductRestHandler) DeleteProductByIDs(c *gin.Context) {
 
 	// Bind JSON payload to formDTO
 	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}
 
 	// Delete products using ProductService
 	if err := handler.ProductService.DeleteProductByIDs(formDTO.IDs); err != nil {
+		log.Printf("%+v\n", err)
 		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
 		return
 	}

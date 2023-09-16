@@ -9,6 +9,7 @@ type StoreUpdateDto struct {
 	Code          string                 `json:"code" validate:"required"`
 	Name          string                 `json:"name" validate:"required"`
 	Location      string                 `json:"location"`
+	StoreTypes    []string               `json:"store_types"`
 	Status        customtypes.StatusEnum `json:"status" validate:"required"`
 	LastUpdatedBy customtypes.NullString `json:"last_updated_by"`
 	Owner         *user.UserMinimalDto   `json:"owner"`

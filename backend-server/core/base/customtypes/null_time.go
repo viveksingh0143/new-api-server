@@ -3,6 +3,7 @@ package customtypes
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"time"
 )
 
@@ -46,6 +47,7 @@ func (n *NullTime) MarshalJSON() ([]byte, error) {
 func (n *NullTime) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -56,6 +58,7 @@ func (n *NullTime) UnmarshalJSON(data []byte) error {
 
 	parsedTime, err := time.Parse(TimeFormat, s)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		n.Valid = false
 		return err
 	}

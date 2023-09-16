@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"time"
 
 	"github.com/vamika-digital/wms-api-server/core/base/customtypes"
@@ -12,6 +13,7 @@ type Store struct {
 	Code          string                 `db:"code" json:"code"`
 	Name          string                 `db:"name" json:"name"`
 	Location      string                 `db:"location" json:"location"`
+	StoreTypes    string                 `db:"store_types" json:"store_types"`
 	OwnerID       int64                  `db:"owner_id" json:"owner_id"`
 	Owner         *adminDomain.User      `db:"_" json:"owner"`
 	Status        customtypes.StatusEnum `db:"status" json:"status"`
@@ -25,4 +27,12 @@ func NewStoreWithDefaults() Store {
 	return Store{
 		Status: customtypes.Enable,
 	}
+}
+
+func (s *Store) GetStoreTypes() []string {
+	return strings.Split(s.StoreTypes, ",")
+}
+
+func (s *Store) SetStoreTypes(storeTypes []string) {
+	s.StoreTypes = strings.Join(storeTypes, ",")
 }

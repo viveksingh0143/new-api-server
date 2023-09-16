@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
@@ -44,6 +45,10 @@ func (r *SQLStoreRepository) getFilterQueryWithArgs(page int, pageSize int, sort
 		queryBuffer.WriteString(" AND name LIKE :name")
 		args["name"] = "%" + filter.Name + "%"
 	}
+	if filter.StoreType != "" {
+		queryBuffer.WriteString(" AND store_types LIKE :store_type")
+		args["store_type"] = "%" + filter.StoreType + "%"
+	}
 	if filter.Status.IsValid() {
 		queryBuffer.WriteString(" AND status = :status")
 		args["status"] = filter.Status
@@ -77,11 +82,13 @@ func (r *SQLStoreRepository) GetTotalCount(filter *store.StoreFilterDto) (int, e
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
 	err = namedQuery.Get(&count, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return 0, err
 	}
 
@@ -99,11 +106,13 @@ func (r *SQLStoreRepository) GetAll(page int, pageSize int, sort string, filter 
 	query := queryBuffer.String()
 	namedQuery, err := r.DB.PrepareNamed(query)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
 	err = namedQuery.Select(&stores, args)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return nil, err
 	}
 
@@ -115,6 +124,7 @@ func (r *SQLStoreRepository) Create(store *domain.Store) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM stores WHERE code = ?", store.Code)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -126,6 +136,7 @@ func (r *SQLStoreRepository) Create(store *domain.Store) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM stores WHERE name = ?", store.Name)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -135,6 +146,7 @@ func (r *SQLStoreRepository) Create(store *domain.Store) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
@@ -142,15 +154,17 @@ func (r *SQLStoreRepository) Create(store *domain.Store) error {
 		store.OwnerID = store.Owner.ID
 	}
 
-	query := `INSERT INTO stores (code, name, location, owner_id, status, last_updated_by) VALUES(:code, :name, :location, :owner_id, :status, :last_updated_by)`
+	query := `INSERT INTO stores (code, name, location, store_types, owner_id, status, last_updated_by) VALUES(:code, :name, :location, :store_types, :owner_id, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, store)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		_ = tx.Rollback()
 		return err
 	}
@@ -164,6 +178,24 @@ func (r *SQLStoreRepository) GetById(storeID int64) (*domain.Store, error) {
 	return store, err
 }
 
+func (r *SQLStoreRepository) GetByIds(storeIDs []int64) ([]*domain.Store, error) {
+	var stores []*domain.Store
+	query, args, err := sqlx.In("SELECT * FROM stores WHERE id IN (?) AND deleted_at IS NULL", storeIDs)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	query = r.DB.Rebind(query)
+	err = r.DB.Select(&stores, query, args...)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	return stores, nil
+}
+
 func (r *SQLStoreRepository) GetByCode(storeCode string) (*domain.Store, error) {
 	store := &domain.Store{}
 	err := r.DB.Get(store, "SELECT * FROM stores WHERE code = ? AND deleted_at IS NULL", storeCode)
@@ -175,6 +207,7 @@ func (r *SQLStoreRepository) Update(store *domain.Store) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM stores WHERE code = ? AND id != ?", store.Code, store.ID)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -186,6 +219,7 @@ func (r *SQLStoreRepository) Update(store *domain.Store) error {
 		var count int
 		err := r.DB.Get(&count, "SELECT COUNT(*) FROM stores WHERE name = ? AND id != ?", store.Name, store.ID)
 		if err != nil {
+			log.Printf("%+v\n", err)
 			return err
 		}
 		if count > 0 {
@@ -195,15 +229,17 @@ func (r *SQLStoreRepository) Update(store *domain.Store) error {
 
 	tx, err := r.DB.Beginx()
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
 	if store.Owner != nil && store.Owner.ID > 0 {
 		store.OwnerID = store.Owner.ID
 	}
-	query := "UPDATE stores SET code=:code, name=:name, location=:location, owner_id=:owner_id, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
+	query := "UPDATE stores SET code=:code, name=:name, location=:location, store_types=:store_types, owner_id=:owner_id, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
 	_, err = tx.NamedExec(query, store)
 	if err != nil {
+		log.Printf("%+v\n", err)
 		tx.Rollback()
 		return err
 	}
@@ -225,6 +261,7 @@ func (r *SQLStoreRepository) DeleteByIDs(storeIDs []int64) error {
 	query, args, err := sqlx.In(query, storeIDs)
 
 	if err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 

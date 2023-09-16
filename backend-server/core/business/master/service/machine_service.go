@@ -6,6 +6,8 @@ type MachineService interface {
 	GetAllMachines(page int16, pageSize int16, sort string, filter *machine.MachineFilterDto) ([]*machine.MachineDto, int64, error)
 	CreateMachine(machineDto *machine.MachineCreateDto) error
 	GetMachineByID(machineID int64) (*machine.MachineDto, error)
+	GetMinimalMachineByID(machineID int64) (*machine.MachineMinimalDto, error)
+	GetMinimalMachineByIds(machineIDs []int64) ([]*machine.MachineMinimalDto, error)
 	GetMachineByCode(machineCode string) (*machine.MachineDto, error)
 	UpdateMachine(machineID int64, machine *machine.MachineUpdateDto) error
 	DeleteMachine(machineID int64) error

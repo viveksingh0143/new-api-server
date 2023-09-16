@@ -14,6 +14,9 @@ func NewCustomerConverter() *CustomerConverter {
 }
 
 func (c *CustomerConverter) ToMinimalDto(domainCustomer *domain.Customer) *customer.CustomerMinimalDto {
+	if domainCustomer == nil {
+		return nil
+	}
 	customerDto := &customer.CustomerMinimalDto{
 		ID:     domainCustomer.ID,
 		Code:   domainCustomer.Code,
@@ -55,6 +58,14 @@ func (c *CustomerConverter) ToDtoSlice(domainCustomers []*domain.Customer) []*cu
 	var customerDtos = make([]*customer.CustomerDto, 0)
 	for _, domainCustomer := range domainCustomers {
 		customerDtos = append(customerDtos, c.ToDto(domainCustomer))
+	}
+	return customerDtos
+}
+
+func (c *CustomerConverter) ToMinimalDtoSlice(domainCustomers []*domain.Customer) []*customer.CustomerMinimalDto {
+	var customerDtos = make([]*customer.CustomerMinimalDto, 0)
+	for _, domainCustomer := range domainCustomers {
+		customerDtos = append(customerDtos, c.ToMinimalDto(domainCustomer))
 	}
 	return customerDtos
 }

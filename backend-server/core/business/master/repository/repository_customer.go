@@ -11,6 +11,7 @@ type CustomerRepository interface {
 	Delete(customerID int64) error
 	DeleteByIDs(customerIDs []int64) error
 	GetById(customerID int64) (*domain.Customer, error)
+	GetByIds(customerIDs []int64) ([]*domain.Customer, error)
 	GetTotalCount(filter *customer.CustomerFilterDto) (int, error)
 	GetAll(page int, pageSize int, sort string, filter *customer.CustomerFilterDto) ([]*domain.Customer, error)
 }

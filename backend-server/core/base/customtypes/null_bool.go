@@ -3,6 +3,7 @@ package customtypes
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 )
 
 type NullBool struct {
@@ -35,6 +36,7 @@ func (nb *NullBool) MarshalJSON() ([]byte, error) {
 func (nb *NullBool) UnmarshalJSON(data []byte) error {
 	var b *bool
 	if err := json.Unmarshal(data, &b); err != nil {
+		log.Printf("%+v\n", err)
 		return err
 	}
 
