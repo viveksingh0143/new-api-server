@@ -45,6 +45,7 @@ func (c *OutwardRequestConverter) ToDto(domainOutwardRequest *domain.OutwardRequ
 				ProductID:        domainOutwardRequestItem.ProductID,
 				Quantity:         domainOutwardRequestItem.Quantity,
 				Product:          c.ProductConv.ToMinimalDto(domainOutwardRequestItem.Product),
+				LockedQuantity:   domainOutwardRequestItem.LockedQuantity,
 			})
 		}
 	}
@@ -86,6 +87,7 @@ func (c *OutwardRequestConverter) ToDomain(outwardrequestDto *outwardrequest.Out
 				OutwardRequestID: outwardrequestDtoItem.OutwardRequestID,
 				ProductID:        outwardrequestDtoItem.ProductID,
 				Quantity:         outwardrequestDtoItem.Quantity,
+				LockedQuantity:   outwardrequestDtoItem.LockedQuantity,
 			}
 			if outwardrequestDtoItem.Product != nil {
 				domainOutwardRequestItem.ProductID = outwardrequestDtoItem.Product.ID
@@ -115,6 +117,7 @@ func (c *OutwardRequestConverter) ToUpdateDomain(domainOutwardRequest *domain.Ou
 				OutwardRequestID: outwardrequestDtoItem.OutwardRequestID,
 				ProductID:        outwardrequestDtoItem.ProductID,
 				Quantity:         outwardrequestDtoItem.Quantity,
+				LockedQuantity:   outwardrequestDtoItem.LockedQuantity,
 			}
 			if outwardrequestDtoItem.Product != nil {
 				domainOutwardRequestItem.ProductID = outwardrequestDtoItem.Product.ID

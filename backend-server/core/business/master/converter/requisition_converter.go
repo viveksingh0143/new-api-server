@@ -42,11 +42,13 @@ func (c *RequisitionConverter) ToDto(domainRequisition *domain.Requisition) *req
 	if domainRequisition.Items != nil && len(domainRequisition.Items) > 0 {
 		for _, domainRequisitionItem := range domainRequisition.Items {
 			requisitionItems = append(requisitionItems, &requisition.RequisitionItemDto{
-				ID:            domainRequisitionItem.ID,
-				RequisitionID: domainRequisitionItem.RequisitionID,
-				ProductID:     domainRequisitionItem.ProductID,
-				Quantity:      domainRequisitionItem.Quantity,
-				Product:       c.ProductConv.ToMinimalDto(domainRequisitionItem.Product),
+				ID:              domainRequisitionItem.ID,
+				RequisitionID:   domainRequisitionItem.RequisitionID,
+				ProductID:       domainRequisitionItem.ProductID,
+				Quantity:        domainRequisitionItem.Quantity,
+				PendingQuantity: domainRequisitionItem.PendingQuantity,
+				LockedQuantity:  domainRequisitionItem.LockedQuantity,
+				Product:         c.ProductConv.ToMinimalDto(domainRequisitionItem.Product),
 			})
 		}
 	}
@@ -86,9 +88,10 @@ func (c *RequisitionConverter) ToDomain(requisitionDto *requisition.RequisitionC
 	if requisitionDto.Items != nil && len(requisitionDto.Items) > 0 {
 		for _, requisitionDtoItem := range requisitionDto.Items {
 			domainRequisitionItem := &domain.RequisitionItem{
-				RequisitionID: requisitionDtoItem.RequisitionID,
-				ProductID:     requisitionDtoItem.ProductID,
-				Quantity:      requisitionDtoItem.Quantity,
+				RequisitionID:  requisitionDtoItem.RequisitionID,
+				ProductID:      requisitionDtoItem.ProductID,
+				Quantity:       requisitionDtoItem.Quantity,
+				LockedQuantity: requisitionDtoItem.LockedQuantity,
 			}
 			if requisitionDtoItem.Product != nil {
 				domainRequisitionItem.ProductID = requisitionDtoItem.Product.ID
@@ -116,9 +119,10 @@ func (c *RequisitionConverter) ToUpdateDomain(domainRequisition *domain.Requisit
 	if requisitionDto.Items != nil && len(requisitionDto.Items) > 0 {
 		for _, requisitionDtoItem := range requisitionDto.Items {
 			domainRequisitionItem := &domain.RequisitionItem{
-				RequisitionID: requisitionDtoItem.RequisitionID,
-				ProductID:     requisitionDtoItem.ProductID,
-				Quantity:      requisitionDtoItem.Quantity,
+				RequisitionID:  requisitionDtoItem.RequisitionID,
+				ProductID:      requisitionDtoItem.ProductID,
+				Quantity:       requisitionDtoItem.Quantity,
+				LockedQuantity: requisitionDtoItem.LockedQuantity,
 			}
 			if requisitionDtoItem.Product != nil {
 				domainRequisitionItem.ProductID = requisitionDtoItem.Product.ID

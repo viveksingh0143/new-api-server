@@ -25,5 +25,7 @@ type OutwardRequestItem struct {
 	OutwardRequestID int64    `db:"outwardrequest_id" json:"outwardrequest_id"`
 	ProductID        int64    `db:"product_id" json:"product_id"`
 	Quantity         int64    `db:"quantity" json:"quantity"`
+	PendingQuantity  int64    `db:"_" json:"pending_quantity"`
+	LockedQuantity   int64    `db:"_" json:"locked_quantity"`
 	Product          *Product `db:"_" json:"product"`
 }

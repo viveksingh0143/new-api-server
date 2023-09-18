@@ -2,6 +2,8 @@ package container
 
 import (
 	"github.com/vamika-digital/wms-api-server/core/base/customtypes"
+	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
+	"github.com/vamika-digital/wms-api-server/core/business/master/dto/store"
 )
 
 type ContainerDto struct {
@@ -18,4 +20,7 @@ type ContainerDto struct {
 	MaxCapacity   int64                         `json:"max_capacity"`
 	CanContains   []customtypes.ContainableType `json:"can_contains"`
 	Level         customtypes.StockLevel        `json:"stock_level"`
+	StoreID       customtypes.NullInt64         `json:"store_id"`
+	Store         *store.StoreMinimalDto        `json:"store"`
+	OtherInfo     *domain.ContainerInfo         `json:"other_info"`
 }

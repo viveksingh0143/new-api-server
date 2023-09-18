@@ -3,6 +3,7 @@ package service
 import (
 	"log"
 
+	"github.com/vamika-digital/wms-api-server/core/base/helpers"
 	"github.com/vamika-digital/wms-api-server/core/business/master/converter"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/master/dto/requisition"
@@ -110,48 +111,6 @@ func (s *RequisitionServiceImpl) GetMinimalRequisitionByID(requisitionID int64) 
 	return s.RequisitionConverter.ToMinimalDto(domainRequisition), nil
 }
 
-func (s *RequisitionServiceImpl) GetRequisitionByCode(requisitionCode string) (*requisition.RequisitionDto, []*reports.InventoryStatusDetail, error) {
-	domainRequisition, err := s.RequisitionRepo.GetByOrderNo(requisitionCode)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return nil, nil, err
-	}
-
-	domainStore, err := s.StoreRepo.GetById(domainRequisition.StoreID)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return nil, nil, err
-	}
-	domainRequisition.Store = domainStore
-
-	items, err := s.RequisitionRepo.GetItemsForRequisition(domainRequisition.ID)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return nil, nil, err
-	}
-
-	for _, item := range items {
-		productDomain, err := s.ProductRepo.GetById(item.ProductID)
-		if err != nil {
-			log.Printf("%+v\n", err)
-			return nil, nil, err
-		}
-		item.Product = productDomain
-	}
-	domainRequisition.Items = items
-
-	var productIds []int64
-	for _, item := range domainRequisition.Items {
-		productIds = append(productIds, item.ProductID)
-	}
-	reports, err := s.InventoryRepo.GetInventoryDetailForProductIds(productIds)
-	if err != nil {
-		log.Printf("%+v\n", err)
-		return nil, nil, err
-	}
-	return s.RequisitionConverter.ToDto(domainRequisition), reports, nil
-}
-
 func (s *RequisitionServiceImpl) UpdateRequisition(requisitionID int64, requisitionDto *requisition.RequisitionUpdateDto) error {
 	existingRequisition, err := s.RequisitionRepo.GetById(requisitionID)
 	if err != nil {
@@ -181,4 +140,106 @@ func (s *RequisitionServiceImpl) DeleteRequisitionByIDs(requisitionIDs []int64) 
 		return err
 	}
 	return nil
+}
+
+func (s *RequisitionServiceImpl) GetRequisitionByCode(requisitionCode string) (*requisition.RequisitionDto, []*reports.InventoryRackStatusDetail, []*reports.InventoryPalletStatusDetail, error) {
+	domainRequisition, err := s.RequisitionRepo.GetByOrderNo(requisitionCode)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, nil, nil, err
+	}
+
+	domainStore, err := s.StoreRepo.GetById(domainRequisition.StoreID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, nil, nil, err
+	}
+	domainRequisition.Store = domainStore
+
+	items, err := s.RequisitionRepo.GetItemsForRequisition(domainRequisition.ID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, nil, nil, err
+	}
+
+	for _, item := range items {
+		productDomain, err := s.ProductRepo.GetById(item.ProductID)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return nil, nil, nil, err
+		}
+		item.Product = productDomain
+	}
+	domainRequisition.Items = items
+
+	var productIds []int64
+	for _, item := range domainRequisition.Items {
+		productIds = append(productIds, item.ProductID)
+	}
+
+	// Get Locked Quantity
+	requestLockedReports, err := s.InventoryRepo.GetLockedInventoryDetailForRequest(domainRequisition.ID, helpers.GetNameOfTheVariable(domainRequisition))
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, nil, nil, err
+	}
+
+	// Attached Locked Quantity
+	for _, requisitionItem := range domainRequisition.Items {
+		for i := 0; i < len(requestLockedReports); i++ {
+			if requestLockedReports[i].ProductID == requisitionItem.ProductID {
+				requisitionItem.LockedQuantity = requestLockedReports[i].LockCount
+			}
+		}
+	}
+
+	palletItems, err := s.InventoryRepo.GetLockedInventoryStocksWithPalletForRequest(domainRequisition.ID, helpers.GetNameOfTheVariable(domainRequisition))
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, nil, nil, err
+	}
+
+	// Attached Stockout Quantity, Required Quantity
+	for _, requisitionItem := range domainRequisition.Items {
+		requiredQty := requisitionItem.Quantity
+		for i := 0; i < len(palletItems) && requiredQty > 0; i++ {
+			if palletItems[i].ProductID == requisitionItem.ProductID {
+				requiredQty -= palletItems[i].StockOutCount
+				stockOutQty := min(requiredQty, palletItems[i].LockCount)
+				palletItems[i].RequiredStocks = stockOutQty
+				requiredQty -= stockOutQty
+			}
+		}
+		requisitionItem.PendingQuantity = requiredQty
+	}
+
+	// Get Locked Rack Quantity
+	reports, err := s.InventoryRepo.GetInventoryDetailForProductIds(productIds)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, nil, nil, err
+	}
+
+	// Attached Stockout Quantity, Required Quantity
+	for _, requisitionItem := range domainRequisition.Items {
+		requiredQty := requisitionItem.PendingQuantity - requisitionItem.LockedQuantity
+		for i := 0; i < len(reports) && requiredQty > 0; i++ {
+			if reports[i].ProductID == requisitionItem.ProductID {
+				stockOutQty := min(requiredQty, reports[i].StockCount)
+				reports[i].RequiredStocks = stockOutQty
+				requiredQty -= stockOutQty
+			}
+		}
+
+		if requiredQty == 0 {
+			for j := len(reports) - 1; j >= 0; j-- {
+				if reports[j].ProductID == requisitionItem.ProductID {
+					if reports[j].RequiredStocks <= 0 {
+						reports = append(reports[:j], reports[j+1:]...)
+					}
+				}
+			}
+		}
+	}
+	return s.RequisitionConverter.ToDto(domainRequisition), reports, palletItems, nil
 }

@@ -25,4 +25,6 @@ type Stock struct {
 	CreatedAt     time.Time               `db:"created_at"`
 	UpdatedAt     *time.Time              `db:"updated_at"`
 	LastUpdatedBy customtypes.NullString  `db:"last_updated_by"`
+	RequestID     int64                   `db:"request_id"`
+	RequestName   string                  `db:"request_name"`
 }

@@ -15,11 +15,15 @@ import (
 	"github.com/vamika-digital/wms-api-server/core/business/warehouse/converter"
 	"github.com/vamika-digital/wms-api-server/core/business/warehouse/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/warehouse/dto/inventory"
+	"github.com/vamika-digital/wms-api-server/core/business/warehouse/reports"
 	warehouseRepository "github.com/vamika-digital/wms-api-server/core/business/warehouse/repository"
 )
 
 type InventoryServiceImpl struct {
 	BatchLabelService  BatchLabelService
+	RequisitionRepo    masterRepository.RequisitionRepository
+	OutwardRequestRepo masterRepository.OutwardRequestRepository
+	StockRepo          warehouseRepository.StockRepository
 	InventoryRepo      warehouseRepository.InventoryRepository
 	ProductRepo        masterRepository.ProductRepository
 	StoreRepo          masterRepository.StoreRepository
@@ -28,8 +32,8 @@ type InventoryServiceImpl struct {
 	InventoryConverter *converter.InventoryConverter
 }
 
-func NewInventoryService(batchLabelService BatchLabelService, inventoryRepo warehouseRepository.InventoryRepository, productRepo masterRepository.ProductRepository, storeRepo masterRepository.StoreRepository, containerRepo masterRepository.ContainerRepository, inventoryConverter *converter.InventoryConverter) InventoryService {
-	return &InventoryServiceImpl{BatchLabelService: batchLabelService, InventoryRepo: inventoryRepo, ProductRepo: productRepo, StoreRepo: storeRepo, ContainerRepo: containerRepo, InventoryConverter: inventoryConverter}
+func NewInventoryService(batchLabelService BatchLabelService, requisitionRepo masterRepository.RequisitionRepository, outwardRequestRepo masterRepository.OutwardRequestRepository, stockRepo warehouseRepository.StockRepository, inventoryRepo warehouseRepository.InventoryRepository, productRepo masterRepository.ProductRepository, storeRepo masterRepository.StoreRepository, containerRepo masterRepository.ContainerRepository, inventoryConverter *converter.InventoryConverter) InventoryService {
+	return &InventoryServiceImpl{BatchLabelService: batchLabelService, RequisitionRepo: requisitionRepo, OutwardRequestRepo: outwardRequestRepo, StockRepo: stockRepo, InventoryRepo: inventoryRepo, ProductRepo: productRepo, StoreRepo: storeRepo, ContainerRepo: containerRepo, InventoryConverter: inventoryConverter}
 }
 
 func (s *InventoryServiceImpl) GetAllProductsWithStockCounts(page int16, pageSize int16, sort string, filter *inventory.InventoryFilterDto) ([]*inventory.InventoryDto, int64, error) {
@@ -136,7 +140,7 @@ func (s *InventoryServiceImpl) CreateRawMaterialStock(rmStockForm *inventory.Inv
 	stockForm.Barcode = helpers.GenerateBarcode(domainProduct.Code)
 	stockForm.UnitWeight = domainProduct.UnitWeight
 
-	domainPallet.IncreamentStock(domainProduct.ID, resourceType)
+	domainPallet.IncreamentStock(rmStockForm.Quantity, domainProduct.ID, resourceType)
 
 	err = s.InventoryRepo.CreateRawMaterialStock(stockForm, domainPallet)
 	if err != nil {
@@ -187,13 +191,13 @@ func (s *InventoryServiceImpl) CreateFinishedGoodsStock(fdStockForm *inventory.I
 			Barcode:       barcode,
 			BatchNo:       batchLabel.BatchNo,
 			UnitWeight:    float64(batchLabel.UnitWeight),
-			Quantity:      1,
+			Quantity:      batchLabel.PackageQuantity,
 			MachineCode:   batchLabel.Machine.Code,
 			StockInAt:     time.Now(),
 			Status:        customtypes.STOCK_IN,
 			LastUpdatedBy: fdStockForm.LastUpdatedBy,
 		}
-		domainBin.IncreamentStock(batchLabel.Product.ID, resourceType)
+		domainBin.IncreamentStock(batchLabel.PackageQuantity, batchLabel.Product.ID, resourceType)
 		stickers = append(stickers, &domain.LabelSticker{
 			ID:     stickerDto.ID,
 			IsUsed: true,
@@ -223,6 +227,10 @@ func (s *InventoryServiceImpl) AttachContainer(sourceCode string, destinationCod
 		return err
 	}
 
+	if !sourceContainer.IsFull() {
+		return fmt.Errorf("%s is not marked full", strings.ToLower(sourceContainer.Code))
+	}
+
 	if !destinationContainer.Info().ContainsType(sourceContainer.ContainerType.String()) {
 		return fmt.Errorf("%s can not contains %s", strings.ToLower(destinationContainer.ContainerType.String()), strings.ToLower(sourceContainer.ContainerType.String()))
 	}
@@ -240,8 +248,229 @@ func (s *InventoryServiceImpl) AttachContainer(sourceCode string, destinationCod
 		return fmt.Errorf("%s already attached with different container", strings.ToLower(sourceContainer.ContainerType.String()))
 	}
 
-	destinationContainer.IncreamentStock(sourceContainer.ID, resourceType)
+	destinationContainer.IncreamentStock(1, sourceContainer.ID, resourceType)
 	err = s.InventoryRepo.AttachContainer(destinationContainer, sourceContainer)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (s *InventoryServiceImpl) DeattachRackContainer(rackCode string, requestID int64, requestName string) error {
+	rackContainer, err := s.ContainerRepo.GetByCode(rackCode)
+	if err != nil {
+		return err
+	}
+	if !rackContainer.ContainerType.IsRackType() {
+		return fmt.Errorf("%s is not rack container", rackCode)
+	}
+	if rackContainer.Level.IsEmpty() {
+		return fmt.Errorf("%s is empty", strings.ToLower(rackContainer.ContainerType.String()))
+	}
+
+	requestName, err = helpers.GetRequestType(requestName)
+	if err != nil {
+		return err
+	}
+
+	rackContainer.DecreamentStock(1)
+	err = s.InventoryRepo.DeattachRackContainer(rackContainer, requestID, requestName)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (s *InventoryServiceImpl) ProcessRawMaterialStockout(palletCode string, quantity int64, requestID int64, requestName string) error {
+	palletContainer, err := s.ContainerRepo.GetByCode(palletCode)
+	if err != nil {
+		return err
+	}
+	if !palletContainer.ContainerType.IsPalletType() {
+		return fmt.Errorf("%s is not pallet container", palletCode)
+	}
+	if palletContainer.Level.IsEmpty() {
+		return fmt.Errorf("%s is empty", strings.ToLower(palletContainer.ContainerType.String()))
+	}
+	if quantity > palletContainer.ItemsCount {
+		return fmt.Errorf("%s have maximum %d items", palletContainer.Code, palletContainer.ItemsCount)
+	}
+	palletContainer.DecreamentStock(quantity)
+
+	requestName, err = helpers.GetRequestType(requestName)
+	if err != nil {
+		return err
+	}
+
+	domainRequisition, err := s.RequisitionRepo.GetById(requestID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	items, err := s.RequisitionRepo.GetItemsForRequisition(domainRequisition.ID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	for _, item := range items {
+		productDomain, err := s.ProductRepo.GetById(item.ProductID)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return err
+		}
+		item.Product = productDomain
+	}
+	domainRequisition.Items = items
+
+	palletItems, err := s.InventoryRepo.GetLockedInventoryStocksWithPalletForRequest(requestID, requestName)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(palletItems); i++ {
+		if palletItems[i].PalletID == palletContainer.ID {
+			if quantity > palletItems[i].LockCount {
+				return fmt.Errorf("this pallet %s has only %d stocks to collect", palletContainer.Code, palletItems[i].LockCount)
+			}
+		}
+	}
+
+	for _, requisitionItem := range domainRequisition.Items {
+		requiredQty := requisitionItem.Quantity
+		for i := 0; i < len(palletItems) && requiredQty > 0; i++ {
+			if palletItems[i].ProductID == requisitionItem.ProductID {
+				requiredQty -= palletItems[i].StockOutCount
+				stockOutQty := min(requiredQty, palletItems[i].LockCount)
+				palletItems[i].RequiredStocks = stockOutQty
+				requiredQty -= stockOutQty
+			}
+		}
+	}
+
+	var palletStockDetail *reports.InventoryPalletStatusDetail
+	for i := 0; i < len(palletItems); i++ {
+		if palletItems[i].PalletID == palletContainer.ID {
+			palletStockDetail = palletItems[i]
+			break
+		}
+	}
+
+	if palletStockDetail == nil {
+		return fmt.Errorf("this pallet %s is not part of the requisition %s", palletContainer.Code, domainRequisition.OrderNo)
+	}
+	if quantity > palletStockDetail.RequiredStocks {
+		return fmt.Errorf("you can withdraw only %d from this pallet %s", palletStockDetail.RequiredStocks, palletContainer.Code)
+	}
+	if palletStockDetail.StockDispatchingCount < palletStockDetail.StockOutCount+quantity {
+		palletContainer.Clear()
+	}
+
+	err = s.InventoryRepo.StockoutRawMaterial(palletContainer, quantity, requestID, requestName)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (s *InventoryServiceImpl) ProcessFinishedGoodStockout(barcode string, requestID int64, requestName string) error {
+	requestName, err := helpers.GetRequestType(requestName)
+	if err != nil {
+		return err
+	}
+
+	domainOutwardRequest, err := s.OutwardRequestRepo.GetById(requestID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	items, err := s.OutwardRequestRepo.GetItemsForOutwardRequest(domainOutwardRequest.ID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	for _, item := range items {
+		productDomain, err := s.ProductRepo.GetById(item.ProductID)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return err
+		}
+		item.Product = productDomain
+	}
+	domainOutwardRequest.Items = items
+
+	domainStock, err := s.StockRepo.GetByBarcode(barcode)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return fmt.Errorf("given barcode '%s' not found", barcode)
+	}
+	if !domainStock.BinID.Valid {
+		return fmt.Errorf("given barcode '%s' not attached with bin", barcode)
+	}
+
+	binContainer, err := s.ContainerRepo.GetById(domainStock.BinID.Int64)
+	if err != nil {
+		return err
+	}
+	if !binContainer.ContainerType.IsBinType() {
+		return fmt.Errorf("%s is not bin container", binContainer.Code)
+	}
+	if binContainer.Level.IsEmpty() {
+		return fmt.Errorf("%s is empty", strings.ToLower(binContainer.ContainerType.String()))
+	}
+	if domainStock.Quantity > binContainer.ItemsCount {
+		return fmt.Errorf("%s have maximum %d items", binContainer.Code, binContainer.ItemsCount)
+	}
+	binContainer.DecreamentStock(domainStock.Quantity)
+
+	binItems, err := s.InventoryRepo.GetLockedInventoryStocksWithBinForRequest(requestID, requestName)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(binItems); i++ {
+		if binItems[i].BinID == binContainer.ID {
+			if domainStock.Quantity > binItems[i].LockCount {
+				return fmt.Errorf("this bin %s has only %d stocks to collect", binContainer.Code, binItems[i].LockCount)
+			}
+		}
+	}
+
+	for _, outwardRequestItem := range domainOutwardRequest.Items {
+		requiredQty := outwardRequestItem.Quantity
+		for i := 0; i < len(binItems) && requiredQty > 0; i++ {
+			if binItems[i].ProductID == outwardRequestItem.ProductID {
+				requiredQty -= binItems[i].StockOutCount
+				stockOutQty := min(requiredQty, binItems[i].LockCount)
+				binItems[i].RequiredStocks = stockOutQty
+				requiredQty -= stockOutQty
+			}
+		}
+	}
+
+	var binStockDetail *reports.InventoryBinStatusDetail
+	for i := 0; i < len(binItems); i++ {
+		if binItems[i].BinID == binContainer.ID {
+			binStockDetail = binItems[i]
+			break
+		}
+	}
+
+	if binStockDetail == nil {
+		return fmt.Errorf("this bin %s is not part of the outward request %s", binContainer.Code, domainOutwardRequest.OrderNo)
+	}
+	if domainStock.Quantity > binStockDetail.RequiredStocks {
+		return fmt.Errorf("you can withdraw only %d from this bin %s", binStockDetail.RequiredStocks, binContainer.Code)
+	}
+	if binStockDetail.StockDispatchingCount < binStockDetail.StockOutCount+domainStock.Quantity {
+		binContainer.Clear()
+	}
+
+	err = s.InventoryRepo.FinishedGoodMaterial(binContainer, barcode)
 	if err != nil {
 		log.Printf("%+v\n", err)
 		return err

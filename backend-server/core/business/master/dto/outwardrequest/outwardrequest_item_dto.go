@@ -7,5 +7,6 @@ type OutwardRequestItemDto struct {
 	OutwardRequestID int64                      `json:"outwardrequest_id"`
 	ProductID        int64                      `json:"product_id"`
 	Quantity         int64                      `json:"quantity"`
+	LockedQuantity   int64                      `json:"locked_quantity"`
 	Product          *product.ProductMinimalDto `json:"product"`
 }

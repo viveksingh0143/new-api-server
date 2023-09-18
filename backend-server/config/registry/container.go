@@ -145,7 +145,7 @@ func (c *Container) initialize(db drivers.Connection) error {
 	machineConverter := masterConverter.NewMachineConverter()
 	customerConverter := masterConverter.NewCustomerConverter()
 	storeConverter := masterConverter.NewStoreConverter(userConverter)
-	containerConverter := masterConverter.NewContainerConverter()
+	containerConverter := masterConverter.NewContainerConverter(*storeConverter)
 	productConverter := masterConverter.NewProductConverter()
 	joborderConverter := masterConverter.NewJobOrderConverter(*productConverter, *customerConverter)
 	outwardrequestConverter := masterConverter.NewOutwardRequestConverter(*productConverter, *customerConverter)
@@ -166,12 +166,12 @@ func (c *Container) initialize(db drivers.Connection) error {
 	c.ContainerService = masterService.NewContainerService(containerRepo, containerConverter)
 	c.ProductService = masterService.NewProductService(productRepo, productConverter)
 	c.JobOrderService = masterService.NewJobOrderService(joborderRepo, customerRepo, productRepo, joborderConverter)
-	c.OutwardRequestService = masterService.NewOutwardRequestService(outwardrequestRepo, customerRepo, productRepo, outwardrequestConverter)
+	c.OutwardRequestService = masterService.NewOutwardRequestService(outwardrequestRepo, inventoryRepo, customerRepo, productRepo, outwardrequestConverter)
 	c.RequisitionService = masterService.NewRequisitionService(requisitionRepo, inventoryRepo, storeRepo, productRepo, requisitionConverter)
 
 	c.BatchLabelService = warehouseService.NewBatchLabelService(batchlabelRepo, labelstickerRepo, productRepo, machineRepo, customerRepo, batchlabelConverter, labelstickerConverter)
 	c.LabelStickerService = warehouseService.NewLabelStickerService(labelstickerRepo, batchlabelRepo, labelstickerConverter)
-	c.InventoryService = warehouseService.NewInventoryService(c.BatchLabelService, inventoryRepo, productRepo, storeRepo, containerRepo, inventoryConverter)
+	c.InventoryService = warehouseService.NewInventoryService(c.BatchLabelService, requisitionRepo, outwardrequestRepo, stockRepo, inventoryRepo, productRepo, storeRepo, containerRepo, inventoryConverter)
 	c.StockService = warehouseService.NewStockService(stockRepo, productRepo, storeRepo, containerRepo, batchlabelRepo, stockConverter)
 	return nil
 }

@@ -22,9 +22,11 @@ type Requisition struct {
 }
 
 type RequisitionItem struct {
-	ID            int64    `db:"id" json:"id"`
-	RequisitionID int64    `db:"requisition_id" json:"requisition_id"`
-	ProductID     int64    `db:"product_id" json:"product_id"`
-	Quantity      int64    `db:"quantity" json:"quantity"`
-	Product       *Product `db:"_" json:"product"`
+	ID              int64    `db:"id" json:"id"`
+	RequisitionID   int64    `db:"requisition_id" json:"requisition_id"`
+	ProductID       int64    `db:"product_id" json:"product_id"`
+	Quantity        int64    `db:"quantity" json:"quantity"`
+	PendingQuantity int64    `db:"_" json:"pending_quantity"`
+	LockedQuantity  int64    `db:"_" json:"locked_quantity"`
+	Product         *Product `db:"_" json:"product"`
 }

@@ -10,7 +10,7 @@ type RequisitionService interface {
 	CreateRequisition(requisitionDto *requisition.RequisitionCreateDto) error
 	GetRequisitionByID(requisitionID int64) (*requisition.RequisitionDto, error)
 	GetMinimalRequisitionByID(requisitionID int64) (*requisition.RequisitionMinimalDto, error)
-	GetRequisitionByCode(requisitionCode string) (*requisition.RequisitionDto, []*reports.InventoryStatusDetail, error)
+	GetRequisitionByCode(requisitionCode string) (*requisition.RequisitionDto, []*reports.InventoryRackStatusDetail, []*reports.InventoryPalletStatusDetail, error)
 	UpdateRequisition(requisitionID int64, requisition *requisition.RequisitionUpdateDto) error
 	DeleteRequisition(requisitionID int64) error
 	DeleteRequisitionByIDs(requisitionIDs []int64) error

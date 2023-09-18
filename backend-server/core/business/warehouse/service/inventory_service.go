@@ -10,4 +10,7 @@ type InventoryService interface {
 	CreateRawMaterialStock(rmStockForm *inventory.InventoryRMStockCreateDto) error
 	CreateFinishedGoodsStock(fdStockForm *inventory.InventoryFDStockCreateDto) error
 	AttachContainer(string, string) error
+	DeattachRackContainer(rackCode string, requestID int64, requestName string) error
+	ProcessRawMaterialStockout(palletCode string, quantity int64, requestID int64, requestName string) error
+	ProcessFinishedGoodStockout(barcode string, requestID int64, requestName string) error
 }

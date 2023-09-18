@@ -2,6 +2,7 @@ package container
 
 import (
 	"github.com/vamika-digital/wms-api-server/core/base/customtypes"
+	"github.com/vamika-digital/wms-api-server/core/business/master/dto/store"
 )
 
 type ContainerCreateDto struct {
@@ -11,4 +12,5 @@ type ContainerCreateDto struct {
 	Address       string                    `json:"address"`
 	Status        customtypes.StatusEnum    `json:"status"`
 	LastUpdatedBy customtypes.NullString    `json:"last_updated_by"`
+	Store         *store.StoreMinimalDto    `json:"store"`
 }

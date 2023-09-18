@@ -143,3 +143,9 @@ func (r *SQLStockRepository) GetById(stockID int64) (*domain.Stock, error) {
 	err := r.DB.Get(stock, "SELECT * FROM stocks WHERE id = ?", stockID)
 	return stock, err
 }
+
+func (r *SQLStockRepository) GetByBarcode(stockBarcode string) (*domain.Stock, error) {
+	stock := &domain.Stock{}
+	err := r.DB.Get(stock, "SELECT * FROM stocks WHERE barcode = ?", stockBarcode)
+	return stock, err
+}

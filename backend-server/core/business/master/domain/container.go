@@ -21,6 +21,8 @@ type Container struct {
 	ResourceID    customtypes.NullInt64     `db:"resource_id" json:"resource_id"`
 	ResourceName  customtypes.NullString    `db:"resource_name" json:"resource_name"`
 	ItemsCount    int64                     `db:"items_count" json:"items_count"`
+	StoreID       customtypes.NullInt64     `db:"store_id" json:"store_id"`
+	Store         *Store                    `db:"store" json:"store"`
 }
 
 func NewContainerWithDefaults() Container {
@@ -29,8 +31,8 @@ func NewContainerWithDefaults() Container {
 	}
 }
 
-func (c *Container) IncreamentStock(rID int64, rName string) {
-	c.ItemsCount = c.ItemsCount + 1
+func (c *Container) IncreamentStock(quantity int64, rID int64, rName string) {
+	c.ItemsCount = c.ItemsCount + quantity
 	if c.Info().MaxCapacity != -1 && c.ItemsCount >= c.Info().MaxCapacity {
 		c.Level = customtypes.FULL_STOCK
 	} else {
@@ -38,6 +40,24 @@ func (c *Container) IncreamentStock(rID int64, rName string) {
 	}
 	c.ResourceID = customtypes.NewValidNullInt64(rID)
 	c.ResourceName = customtypes.NewValidNullString(rName)
+}
+
+func (c *Container) DecreamentStock(quantity int64) {
+	c.ItemsCount = c.ItemsCount - quantity
+	if c.ItemsCount <= 0 {
+		c.Level = customtypes.EMPTY_STOCK
+		c.ResourceID = customtypes.NewInvalidNullInt64()
+		c.ResourceName = customtypes.NewInvalidNullString()
+	} else {
+		c.Level = customtypes.PARTIAL_STOCK
+	}
+}
+
+func (c *Container) Clear() {
+	c.ItemsCount = 0
+	c.Level = customtypes.EMPTY_STOCK
+	c.ResourceID = customtypes.NewInvalidNullInt64()
+	c.ResourceName = customtypes.NewInvalidNullString()
 }
 
 func (c *Container) IsFull() bool {

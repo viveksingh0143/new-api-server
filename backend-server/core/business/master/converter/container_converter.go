@@ -6,10 +6,14 @@ import (
 	"github.com/vamika-digital/wms-api-server/core/business/master/dto/container"
 )
 
-type ContainerConverter struct{}
+type ContainerConverter struct {
+	storeConv StoreConverter
+}
 
-func NewContainerConverter() *ContainerConverter {
-	return &ContainerConverter{}
+func NewContainerConverter(storeConverter StoreConverter) *ContainerConverter {
+	return &ContainerConverter{
+		storeConv: storeConverter,
+	}
 }
 
 func (c *ContainerConverter) ToMinimalDto(domainContainer *domain.Container) *container.ContainerMinimalDto {
@@ -35,19 +39,9 @@ func (c *ContainerConverter) ToDto(domainContainer *domain.Container) *container
 		UpdatedAt:     customtypes.GetNullTime(domainContainer.UpdatedAt),
 		LastUpdatedBy: domainContainer.LastUpdatedBy,
 		Level:         domainContainer.Level,
-	}
-	if containerDto.ContainerType == customtypes.PALLET_TYPE {
-		containerDto.MinCapacity = domain.PalletContainerInfo.MinCapacity
-		containerDto.MaxCapacity = domain.PalletContainerInfo.MaxCapacity
-		containerDto.CanContains = domain.PalletContainerInfo.CanContains
-	} else if containerDto.ContainerType == customtypes.BIN_TYPE {
-		containerDto.MinCapacity = domain.BinContainerInfo.MinCapacity
-		containerDto.MaxCapacity = domain.BinContainerInfo.MaxCapacity
-		containerDto.CanContains = domain.BinContainerInfo.CanContains
-	} else if containerDto.ContainerType == customtypes.RACK_TYPE {
-		containerDto.MinCapacity = domain.RackContainerInfo.MinCapacity
-		containerDto.MaxCapacity = domain.RackContainerInfo.MaxCapacity
-		containerDto.CanContains = domain.RackContainerInfo.CanContains
+		StoreID:       domainContainer.StoreID,
+		Store:         c.storeConv.ToMinimalDto(domainContainer.Store),
+		OtherInfo:     domainContainer.Info(),
 	}
 	return containerDto
 }
@@ -77,6 +71,9 @@ func (c *ContainerConverter) ToDomain(containerDto *container.ContainerCreateDto
 		Status:        containerDto.Status,
 		LastUpdatedBy: containerDto.LastUpdatedBy,
 	}
+	if containerDto.Store != nil && containerDto.Store.ID > 0 {
+		domainContainer.StoreID = customtypes.NewValidNullInt64(containerDto.Store.ID)
+	}
 	return domainContainer
 }
 
@@ -89,4 +86,9 @@ func (c *ContainerConverter) ToUpdateDomain(domainContainer *domain.Container, c
 		domainContainer.Status = containerDto.Status
 	}
 	domainContainer.LastUpdatedBy = containerDto.LastUpdatedBy
+	if containerDto.Store != nil && containerDto.Store.ID > 0 {
+		domainContainer.StoreID = customtypes.NewValidNullInt64(containerDto.Store.ID)
+	} else {
+		domainContainer.StoreID = customtypes.NewInvalidNullInt64()
+	}
 }
