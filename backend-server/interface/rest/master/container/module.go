@@ -24,5 +24,7 @@ func (m *ContainerRestModule) RegisterRoutes(r *gin.RouterGroup) {
 		containerGroup.GET("/:id", m.Handler.GetContainerByID)
 		containerGroup.PUT("/:id", m.Handler.UpdateContainer)
 		containerGroup.DELETE("/:id", m.Handler.DeleteContainer)
+		containerGroup.GET("need-approvals", m.Handler.GetAllContainerApprovals)
+		containerGroup.POST("need-approvals", m.Handler.ApproveSelectedContainers)
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 type ProductCreateDto struct {
 	ProductType    customtypes.ProductType    `json:"product_type" validate:"ProductType,required"`
+	ProductSubType string                     `json:"product_subtype" validate:"required,min=1"`
 	Code           string                     `json:"code" validate:"required"`
 	LinkCode       string                     `json:"link_code"`
 	Name           string                     `json:"name" validate:"required"`

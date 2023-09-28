@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/master/dto/outwardrequest"
+	"github.com/vamika-digital/wms-api-server/core/business/master/reports"
 	"github.com/vamika-digital/wms-api-server/global/drivers"
 )
 
@@ -285,4 +287,127 @@ func (r *SQLOutwardRequestRepository) GetItemsForOutwardRequest(orderID int64) (
 		return nil, err
 	}
 	return outwardrequestItems, nil
+}
+
+func (r *SQLOutwardRequestRepository) GetShipperLabels(requestID int64, requestName string) ([]*reports.OutwardRequestShipperReport, error) {
+	var shipperReports []*reports.OutwardRequestShipperReport
+
+	query := "SELECT report.*, p.code as product_code, p.name as product_name, s.shipper_number as shipper_number, s.packed_at as shipper_packed_at FROM ( SELECT request_id, request_name, batch_no, product_id, shipperlabel_id as shipper_id, count(*) as package_count from wms.stocks where request_id = :request_id AND request_name = :request_name AND status = 'STOCK-OUT' group by request_id, request_name, batch_no, product_id, shipperlabel_id) as report LEFT JOIN products p ON report.product_id = p.id LEFT JOIN shipperlabels s ON report.shipper_id = s.id"
+	args := map[string]interface{}{
+		"request_id":   requestID,
+		"request_name": requestName,
+	}
+
+	namedQuery, err := r.DB.PrepareNamed(query)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	err = namedQuery.Select(&shipperReports, args)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+	return shipperReports, nil
+}
+
+func (r *SQLOutwardRequestRepository) GenerateShipperLabels(shipperLabelForm *domain.ShipperLabel, batchNo string, productID int64) error {
+	var shipperReports []*reports.OutwardRequestShipperReport
+	var shippers []*domain.ShipperLabel
+
+	query := "SELECT * from shipperlabels s WHERE s.outwardrequest_id = :outwardrequest_id AND batch_no = :batch_no ORDER BY created_at desc"
+	args := map[string]interface{}{
+		"outwardrequest_id": shipperLabelForm.OutwardRequestID,
+		"batch_no":          batchNo,
+	}
+
+	namedQuery, err := r.DB.PrepareNamed(query)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	err = namedQuery.Select(&shippers, args)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	query = "SELECT report.*, p.name as product_name, p.code as product_code, s.shipper_number as shipper_number, s.packed_at as shipper_packed_at FROM ( SELECT request_id, request_name, batch_no, product_id, shipperlabel_id as shipper_id, count(*) as package_count from wms.stocks where request_id=:request_id AND request_name=:request_name  AND batch_no=:batch_no AND product_id=:product_id AND status = 'STOCK-OUT' AND shipperlabel_id IS NULL group by request_id, request_name, batch_no, product_id, shipperlabel_id) as report LEFT JOIN products p ON report.product_id = p.id LEFT JOIN shipperlabels s ON report.shipper_id = s.id"
+	args = map[string]interface{}{
+		"request_id":   shipperLabelForm.OutwardRequestID,
+		"request_name": "*domain.OutwardRequest",
+		"batch_no":     batchNo,
+		"product_id":   productID,
+	}
+
+	namedQuery, err = r.DB.PrepareNamed(query)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	err = namedQuery.Select(&shipperReports, args)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	if len(shipperReports) <= 0 {
+		return fmt.Errorf("no data found with the given request")
+	}
+	if len(shipperReports) > 1 {
+		return fmt.Errorf("somthing wrong with the given request")
+	}
+
+	shipperCount := len(shippers)
+	shipperReport := shipperReports[0]
+	shipperLabelForm.PackedAt = time.Now()
+	shipperLabelForm.ShipperNumber = fmt.Sprintf("%s%s%d", shipperReport.BatchNo, "00", shipperCount+1)
+	shipperLabelForm.ProductCode = shipperReport.ProductCode
+	shipperLabelForm.ProductName = shipperReport.ProductName
+	shipperLabelForm.BatchNo = shipperReport.BatchNo
+	shipperLabelForm.PackedQty = fmt.Sprintf("%dNos", shipperReport.PackageCount)
+
+	tx, err := r.DB.Beginx()
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	query = `INSERT INTO shipperlabels ( shipper_number, customer_name, product_code, product_name, batch_no, packed_qty, packed_at, outwardrequest_id ) VALUES(:shipper_number, :customer_name, :product_code, :product_name, :batch_no, :packed_qty, :packed_at, :outwardrequest_id)`
+	res, err := tx.NamedExec(query, shipperLabelForm)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		_ = tx.Rollback()
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		log.Printf("%+v\n", err)
+		_ = tx.Rollback()
+		return err
+	}
+	shipperLabelForm.ID = id
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("%+v\n", err)
+		_ = tx.Rollback()
+		return err
+	}
+
+	tx, err = r.DB.Beginx()
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	_, err = r.DB.Exec("UPDATE stocks SET shipperlabel_id = ? WHERE request_id = ? AND  request_name = ? AND batch_no = ? AND product_id = ? AND shipperlabel_id IS NULL", shipperLabelForm.ID, shipperLabelForm.OutwardRequestID, "*domain.OutwardRequest", shipperLabelForm.BatchNo, productID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

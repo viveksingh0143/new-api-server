@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/vamika-digital/wms-api-server/core/business/master/dto/outwardrequest"
+	masterReports "github.com/vamika-digital/wms-api-server/core/business/master/reports"
 	"github.com/vamika-digital/wms-api-server/core/business/warehouse/reports"
 )
 
@@ -14,4 +15,6 @@ type OutwardRequestService interface {
 	UpdateOutwardRequest(outwardrequestID int64, outwardrequest *outwardrequest.OutwardRequestUpdateDto) error
 	DeleteOutwardRequest(outwardrequestID int64) error
 	DeleteOutwardRequestByIDs(outwardrequestIDs []int64) error
+	GetShipperLabelsByID(outwardrequestID int64) ([]*masterReports.OutwardRequestShipperReport, error)
+	GenerateShipperLabelsByID(outwardrequestID int64, batchNo string, productID int64) error
 }

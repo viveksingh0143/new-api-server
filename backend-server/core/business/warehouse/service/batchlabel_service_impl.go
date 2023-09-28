@@ -247,7 +247,7 @@ func (s *BatchLabelServiceImpl) GenerateBatchLabelStickers(batchlabelID int64, f
 			LastUpdatedBy: customtypes.NewNullString(form.LastUpdatedBy),
 			BatchLabelID:  domainBatchLabel.ID,
 		}
-		labelSticker.UUIDCode = fmt.Sprintf("%s%s%s%s", labelSticker.BatchNo, labelSticker.Shift, labelSticker.PacketNo, nextSerialNumber)
+		labelSticker.UUIDCode = fmt.Sprintf("%s%s%s", labelSticker.BatchNo, nextSerialNumber, domainBatchLabel.Machine.Code)
 		stickers = append(stickers, labelSticker)
 	}
 

@@ -16,4 +16,6 @@ type RequisitionRepository interface {
 	DeleteByIDs(requisitionIDs []int64) error
 	GetItemsForRequisitions(orderIDs []int64) (map[int64][]*domain.RequisitionItem, error)
 	GetItemsForRequisition(orderIDs int64) ([]*domain.RequisitionItem, error)
+
+	ApproveRequisitionByIDs(requisitionIDs []int64) error
 }

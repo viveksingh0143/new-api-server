@@ -23,5 +23,7 @@ func (m *OutwardRequestRestModule) RegisterRoutes(r *gin.RouterGroup) {
 		outwardrequestGroup.GET("/:id", m.Handler.GetOutwardRequestByID)
 		outwardrequestGroup.PUT("/:id", m.Handler.UpdateOutwardRequest)
 		outwardrequestGroup.DELETE("/:id", m.Handler.DeleteOutwardRequest)
+		outwardrequestGroup.GET("/:id/shipperlabels", m.Handler.GetShipperLabelsByID)
+		outwardrequestGroup.POST("/:id/shipperlabels", m.Handler.GenerateShipperLabelsByID)
 	}
 }

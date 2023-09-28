@@ -34,6 +34,7 @@ func (c *ContainerConverter) ToDto(domainContainer *domain.Container) *container
 		Code:          domainContainer.Code,
 		Name:          domainContainer.Name,
 		Address:       domainContainer.Address,
+		IsApproved:    domainContainer.IsApproved,
 		Status:        domainContainer.Status,
 		CreatedAt:     customtypes.NewValidNullTime(domainContainer.CreatedAt),
 		UpdatedAt:     customtypes.GetNullTime(domainContainer.UpdatedAt),
@@ -42,6 +43,9 @@ func (c *ContainerConverter) ToDto(domainContainer *domain.Container) *container
 		StoreID:       domainContainer.StoreID,
 		Store:         c.storeConv.ToMinimalDto(domainContainer.Store),
 		OtherInfo:     domainContainer.Info(),
+		ResourceID:    domainContainer.ResourceID,
+		ResourceName:  domainContainer.ResourceName,
+		ItemsCount:    domainContainer.ItemsCount,
 	}
 	return containerDto
 }

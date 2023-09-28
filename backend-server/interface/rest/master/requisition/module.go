@@ -23,5 +23,8 @@ func (m *RequisitionRestModule) RegisterRoutes(r *gin.RouterGroup) {
 		requisitionGroup.GET("/:id", m.Handler.GetRequisitionByID)
 		requisitionGroup.PUT("/:id", m.Handler.UpdateRequisition)
 		requisitionGroup.DELETE("/:id", m.Handler.DeleteRequisition)
+
+		requisitionGroup.GET("need-approvals", m.Handler.GetAllRequisitionApprovals)
+		requisitionGroup.POST("need-approvals", m.Handler.ApproveSelectedRequisitions)
 	}
 }

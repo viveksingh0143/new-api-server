@@ -14,4 +14,7 @@ type RequisitionService interface {
 	UpdateRequisition(requisitionID int64, requisition *requisition.RequisitionUpdateDto) error
 	DeleteRequisition(requisitionID int64) error
 	DeleteRequisitionByIDs(requisitionIDs []int64) error
+
+	GetAllRequisitionApprovals(page int16, pageSize int16, sort string, filter *requisition.RequisitionFilterDto) ([]*requisition.RequisitionDto, int64, error)
+	ApproveRequisitionByIDs(requisitionIDs []int64) error
 }

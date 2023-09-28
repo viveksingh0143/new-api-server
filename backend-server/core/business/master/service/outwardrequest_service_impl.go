@@ -7,6 +7,7 @@ import (
 	"github.com/vamika-digital/wms-api-server/core/business/master/converter"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/master/dto/outwardrequest"
+	masterReports "github.com/vamika-digital/wms-api-server/core/business/master/reports"
 	"github.com/vamika-digital/wms-api-server/core/business/master/repository"
 	"github.com/vamika-digital/wms-api-server/core/business/warehouse/reports"
 	warehouseRepository "github.com/vamika-digital/wms-api-server/core/business/warehouse/repository"
@@ -242,4 +243,45 @@ func (s *OutwardRequestServiceImpl) GetOutwardRequestByCode(outwardrequestCode s
 		}
 	}
 	return s.OutwardRequestConverter.ToDto(domainOutwardRequest), reports, binItems, nil
+}
+
+func (s *OutwardRequestServiceImpl) GetShipperLabelsByID(outwardrequestID int64) ([]*masterReports.OutwardRequestShipperReport, error) {
+	domainOutwardRequest, err := s.OutwardRequestRepo.GetById(outwardrequestID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+	requestName, _ := helpers.GetRequestType(helpers.OUTWARDREQUEST_TYPE)
+	reports, err := s.OutwardRequestRepo.GetShipperLabels(domainOutwardRequest.ID, requestName)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+	return reports, err
+}
+
+func (s *OutwardRequestServiceImpl) GenerateShipperLabelsByID(outwardrequestID int64, batchNo string, productID int64) error {
+	domainOutwardRequest, err := s.OutwardRequestRepo.GetById(outwardrequestID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+
+	domainCustomer, err := s.CustomerRepo.GetById(domainOutwardRequest.CustomerID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	domainOutwardRequest.Customer = domainCustomer
+
+	shipperLabel := &domain.ShipperLabel{
+		CustomerName:     domainOutwardRequest.Customer.Name,
+		OutwardRequestID: domainOutwardRequest.ID,
+	}
+	err = s.OutwardRequestRepo.GenerateShipperLabels(shipperLabel, batchNo, productID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	return nil
 }

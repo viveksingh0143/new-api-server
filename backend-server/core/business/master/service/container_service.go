@@ -19,4 +19,7 @@ type ContainerService interface {
 
 	GetOneActiveContainerByCodeAndType(code string, containerType customtypes.ContainerType) (*container.ContainerMinimalDto, error)
 	MarkContainerFullByCode(code string) error
+
+	GetAllContainerApprovals(page int16, pageSize int16, sort string, filter *container.ContainerFilterDto) ([]*container.ContainerDto, int64, error)
+	ApproveContainerByIDs(containerIDs []int64) error
 }

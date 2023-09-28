@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/master/dto/outwardrequest"
+	"github.com/vamika-digital/wms-api-server/core/business/master/reports"
 )
 
 type OutwardRequestRepository interface {
@@ -16,4 +17,6 @@ type OutwardRequestRepository interface {
 	DeleteByIDs(outwardrequestIDs []int64) error
 	GetItemsForOutwardRequests(orderIDs []int64) (map[int64][]*domain.OutwardRequestItem, error)
 	GetItemsForOutwardRequest(orderIDs int64) ([]*domain.OutwardRequestItem, error)
+	GetShipperLabels(requestID int64, requestName string) ([]*reports.OutwardRequestShipperReport, error)
+	GenerateShipperLabels(shipperLabel *domain.ShipperLabel, batchNo string, productID int64) error
 }

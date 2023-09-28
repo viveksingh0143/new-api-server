@@ -13,16 +13,19 @@ import (
 	adminDomain "github.com/vamika-digital/wms-api-server/core/business/admin/domain"
 	"github.com/vamika-digital/wms-api-server/core/business/admin/dto/user"
 	adminRepository "github.com/vamika-digital/wms-api-server/core/business/admin/repository"
+	"github.com/vamika-digital/wms-api-server/core/business/auth/dto/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthServiceImpl struct {
-	userRepository adminRepository.UserRepository
-	userConverter  converter.UserConverter
+	userRepository       adminRepository.UserRepository
+	roleRepository       adminRepository.RoleRepository
+	permissionRepository adminRepository.PermissionRepository
+	userConverter        converter.UserConverter
 }
 
-func NewAuthService(userRepository adminRepository.UserRepository, userConverter converter.UserConverter) AuthService {
-	return &AuthServiceImpl{userRepository: userRepository, userConverter: userConverter}
+func NewAuthService(userRepository adminRepository.UserRepository, roleRepository adminRepository.RoleRepository, permissionRepository adminRepository.PermissionRepository, userConverter converter.UserConverter) AuthService {
+	return &AuthServiceImpl{userRepository: userRepository, roleRepository: roleRepository, permissionRepository: permissionRepository, userConverter: userConverter}
 }
 
 func (service *AuthServiceImpl) GetUserById(idStr string) (*user.UserDto, error) {
@@ -107,4 +110,31 @@ func (service *AuthServiceImpl) GenerateRefreshToken(user *user.UserDto, expireL
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(authconfig.Cfg.SecretKey))
+}
+
+func (service *AuthServiceImpl) GetAllPermissions(user *user.UserDto) ([]*auth.PermissionDto, error) {
+	allPermissions := make([]*auth.PermissionDto, 0)
+
+	roles, err := service.roleRepository.GetRolesForUser(user.ID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, err
+	}
+
+	for _, role := range roles {
+		permissions, err := service.permissionRepository.GetAllByRoleId(role.ID)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return nil, err
+		}
+		for _, permission := range permissions {
+			for _, name := range permission.GetAllActivePermissions() {
+				allPermissions = append(allPermissions, &auth.PermissionDto{
+					Module: permission.ModuleName,
+					Name:   name,
+				})
+			}
+		}
+	}
+	return allPermissions, nil
 }

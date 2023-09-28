@@ -32,6 +32,7 @@ func (c *RequisitionConverter) ToDto(domainRequisition *domain.Requisition) *req
 		OrderNo:       domainRequisition.OrderNo,
 		Department:    domainRequisition.Department,
 		StoreID:       domainRequisition.StoreID,
+		IsApproved:    domainRequisition.IsApproved,
 		Status:        domainRequisition.Status,
 		CreatedAt:     customtypes.NewValidNullTime(domainRequisition.CreatedAt),
 		UpdatedAt:     customtypes.GetNullTime(domainRequisition.UpdatedAt),

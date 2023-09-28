@@ -7,24 +7,26 @@ import (
 )
 
 type Stock struct {
-	ID            int64                   `db:"id"`
-	ProductID     int64                   `db:"product_id"`
-	StoreID       int64                   `db:"store_id"`
-	BinID         customtypes.NullInt64   `db:"bin_id"`
-	PalletID      customtypes.NullInt64   `db:"pallet_id"`
-	RackID        customtypes.NullInt64   `db:"rack_id"`
-	BatchLabelID  customtypes.NullInt64   `db:"batchlabel_id"`
-	Barcode       string                  `db:"barcode"`
-	BatchNo       string                  `db:"batch_no"`
-	UnitWeight    float64                 `db:"unit_weight"`
-	Quantity      int64                   `db:"quantity"`
-	MachineCode   string                  `db:"machine_code"`
-	StockInAt     time.Time               `db:"stockin_at"`
-	StockOutAt    *time.Time              `db:"stockout_at"`
-	Status        customtypes.StockStatus `db:"status"`
-	CreatedAt     time.Time               `db:"created_at"`
-	UpdatedAt     *time.Time              `db:"updated_at"`
-	LastUpdatedBy customtypes.NullString  `db:"last_updated_by"`
-	RequestID     int64                   `db:"request_id"`
-	RequestName   string                  `db:"request_name"`
+	ID              int64                   `db:"id"`
+	ProductID       int64                   `db:"product_id"`
+	StoreID         int64                   `db:"store_id"`
+	BinID           customtypes.NullInt64   `db:"bin_id"`
+	PalletID        customtypes.NullInt64   `db:"pallet_id"`
+	RackID          customtypes.NullInt64   `db:"rack_id"`
+	BatchLabelID    customtypes.NullInt64   `db:"batchlabel_id"`
+	Barcode         string                  `db:"barcode"`
+	BatchNo         string                  `db:"batch_no"`
+	UnitWeight      float64                 `db:"unit_weight"`
+	Quantity        int64                   `db:"quantity"`
+	PackageQuantity int64                   `db:"package_quantity"`
+	MachineCode     string                  `db:"machine_code"`
+	StockInAt       time.Time               `db:"stockin_at"`
+	StockOutAt      *time.Time              `db:"stockout_at"`
+	Status          customtypes.StockStatus `db:"status"`
+	CreatedAt       time.Time               `db:"created_at"`
+	UpdatedAt       *time.Time              `db:"updated_at"`
+	LastUpdatedBy   customtypes.NullString  `db:"last_updated_by"`
+	RequestID       customtypes.NullInt64   `db:"request_id"`
+	RequestName     customtypes.NullString  `db:"request_name"`
+	ShipperLabelID  customtypes.NullInt64   `db:"shipperlabel_id"`
 }

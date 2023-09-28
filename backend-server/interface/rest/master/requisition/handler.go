@@ -156,3 +156,47 @@ func (handler *RequisitionRestHandler) DeleteRequisitionByIDs(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
+
+func (h *RequisitionRestHandler) GetAllRequisitionApprovals(c *gin.Context) {
+	var filter = &requisition.RequisitionFilterDto{}
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+	var pageProps dto.PaginationProps
+	if err := c.ShouldBindQuery(&pageProps); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	pageNumber, rowsPerPage, sort := pageProps.GetValues()
+	data, totalCount, err := h.RequisitionService.GetAllRequisitionApprovals(pageNumber, rowsPerPage, sort, filter)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+	pageResponse := dto.GetPaginatedRestResponse(data, totalCount, pageNumber, rowsPerPage)
+	c.JSON(http.StatusOK, pageResponse)
+}
+
+func (handler *RequisitionRestHandler) ApproveSelectedRequisitions(c *gin.Context) {
+	formDTO := &dto.BatchDeleteDTO{}
+
+	// Bind JSON payload to formDTO
+	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	if err := handler.RequisitionService.ApproveRequisitionByIDs(formDTO.IDs); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	c.Status(http.StatusOK)
+}

@@ -20,4 +20,6 @@ type ContainerRepository interface {
 	GetOneContainerByCodeAndType(code string, containerType customtypes.ContainerType) (*domain.Container, error)
 	MarkContainerFullById(id int64) error
 	AttachedCount(resourceId int64, resourceType string) (int, error)
+
+	ApproveContainerByIDs(containerIDs []int64) error
 }

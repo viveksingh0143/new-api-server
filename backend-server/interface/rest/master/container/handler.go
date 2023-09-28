@@ -167,3 +167,48 @@ func (handler *ContainerRestHandler) GetContainerCodeInfoDto(c *gin.Context) {
 
 	c.JSON(http.StatusOK, containerInfo)
 }
+
+func (h *ContainerRestHandler) GetAllContainerApprovals(c *gin.Context) {
+	var filter = &container.ContainerFilterDto{}
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+	var pageProps dto.PaginationProps
+	if err := c.ShouldBindQuery(&pageProps); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	pageNumber, rowsPerPage, sort := pageProps.GetValues()
+	data, totalCount, err := h.ContainerService.GetAllContainerApprovals(pageNumber, rowsPerPage, sort, filter)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+	pageResponse := dto.GetPaginatedRestResponse(data, totalCount, pageNumber, rowsPerPage)
+	c.JSON(http.StatusOK, pageResponse)
+}
+
+// ApproveSelectedContainers approves a container by its IDs
+func (handler *ContainerRestHandler) ApproveSelectedContainers(c *gin.Context) {
+	formDTO := &dto.BatchDeleteDTO{}
+
+	// Bind JSON payload to formDTO
+	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	if err := handler.ContainerService.ApproveContainerByIDs(formDTO.IDs); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	c.Status(http.StatusOK)
+}

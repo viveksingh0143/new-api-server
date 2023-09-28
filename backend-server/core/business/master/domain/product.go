@@ -9,6 +9,7 @@ import (
 type Product struct {
 	ID             int64                      `db:"id" json:"id"`
 	ProductType    customtypes.ProductType    `db:"product_type" json:"product_type"`
+	ProductSubType string                     `db:"product_subtype" json:"product_subtype"`
 	Code           string                     `db:"code" json:"code"`
 	LinkCode       string                     `db:"link_code" json:"link_code"`
 	Name           string                     `db:"name" json:"name"`

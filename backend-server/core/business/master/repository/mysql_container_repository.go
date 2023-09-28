@@ -57,6 +57,11 @@ func (r *SQLContainerRepository) getFilterQueryWithArgs(page int, pageSize int, 
 		args["container_type"] = filter.ContainerType
 	}
 
+	if filter.IsApproved.Valid {
+		queryBuffer.WriteString(" AND approved = :approved")
+		args["approved"] = filter.IsApproved.Bool
+	}
+
 	if filter.Status.IsValid() {
 		queryBuffer.WriteString(" AND status = :status")
 		args["status"] = filter.Status
@@ -307,4 +312,46 @@ func (r *SQLContainerRepository) AttachedCount(resourceId int64, resourceName st
 	}
 
 	return count, nil
+}
+
+func (r *SQLContainerRepository) ApproveContainerByIDs(containerIDs []int64) error {
+	if len(containerIDs) == 0 {
+		return nil
+	}
+
+	tx, err := r.DB.Beginx()
+	if err != nil {
+		return err
+	}
+
+	query := "UPDATE containers SET approved = ? WHERE id IN (?) AND container_type='PALLET'"
+	query, args, err := sqlx.In(query, 1, containerIDs)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query = tx.Rebind(query)
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	stockUpdateQuery := "UPDATE stocks SET status='STOCK-IN' WHERE status='STOCK-IN-APPROVAL' AND pallet_id IN (?)"
+	stockUpdateQuery, args, err = sqlx.In(stockUpdateQuery, containerIDs)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	stockUpdateQuery = tx.Rebind(stockUpdateQuery)
+
+	_, err = tx.Exec(stockUpdateQuery, args...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }

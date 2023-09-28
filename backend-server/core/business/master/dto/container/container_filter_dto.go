@@ -12,4 +12,5 @@ type ContainerFilterDto struct {
 	Code          string                     `form:"code" json:"code"`
 	Name          string                     `form:"name" json:"name"`
 	Status        customtypes.StatusEnum     `form:"status" json:"status"`
+	IsApproved    customtypes.NullBool       `form:"approved" json:"approved"`
 }

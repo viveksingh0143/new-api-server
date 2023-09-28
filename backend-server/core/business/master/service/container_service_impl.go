@@ -14,11 +14,12 @@ import (
 
 type ContainerServiceImpl struct {
 	ContainerRepo      repository.ContainerRepository
+	ProductRepo        repository.ProductRepository
 	ContainerConverter *converter.ContainerConverter
 }
 
-func NewContainerService(containerRepo repository.ContainerRepository, containerConverter *converter.ContainerConverter) ContainerService {
-	return &ContainerServiceImpl{ContainerRepo: containerRepo, ContainerConverter: containerConverter}
+func NewContainerService(containerRepo repository.ContainerRepository, productRepo repository.ProductRepository, containerConverter *converter.ContainerConverter) ContainerService {
+	return &ContainerServiceImpl{ContainerRepo: containerRepo, ProductRepo: productRepo, ContainerConverter: containerConverter}
 }
 
 func (s *ContainerServiceImpl) GetAllContainers(page int16, pageSize int16, sort string, filter *container.ContainerFilterDto) ([]*container.ContainerDto, int64, error) {
@@ -34,6 +35,71 @@ func (s *ContainerServiceImpl) GetAllContainers(page int16, pageSize int16, sort
 	}
 	// Convert domain containers to DTOs. You can do this based on your requirements.
 	var containerDtos []*container.ContainerDto = s.ContainerConverter.ToDtoSlice(domainContainers)
+
+	if len(containerDtos) > 0 {
+		resourceIds := make([]int64, 0, len(containerDtos))
+		for _, containerDto := range containerDtos {
+			if containerDto.ResourceID.Valid && containerDto.ResourceName.Valid && containerDto.ResourceName.String == "*domain.Product" {
+				resourceIds = append(resourceIds, containerDto.ResourceID.Int64)
+			}
+		}
+		if len(resourceIds) > 0 {
+			products, err := s.ProductRepo.GetByIds(resourceIds)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return nil, 0, err
+			}
+			if len(products) > 0 {
+				for _, containerDto := range containerDtos {
+					if containerDto.ResourceID.Valid {
+						for _, product := range products {
+							if product.ID == containerDto.ResourceID.Int64 {
+								containerDto.ContainerItemDto = &container.ContainerItemDto{
+									ID:    product.ID,
+									Code:  product.Code,
+									Name:  product.Name,
+									Type:  string(product.ProductType),
+									Count: containerDto.ItemsCount,
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if len(containerDtos) > 0 {
+		resourceIds := make([]int64, 0, len(containerDtos))
+		for _, containerDto := range containerDtos {
+			if containerDto.ResourceID.Valid && containerDto.ResourceName.Valid && containerDto.ResourceName.String == "*domain.Container" {
+				resourceIds = append(resourceIds, containerDto.ResourceID.Int64)
+			}
+		}
+		if len(resourceIds) > 0 {
+			containerDomains, err := s.ContainerRepo.GetByIds(resourceIds)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return nil, 0, err
+			}
+			if len(containerDomains) > 0 {
+				for _, containerDto := range containerDtos {
+					if containerDto.ResourceID.Valid {
+						for _, containerDomain := range containerDomains {
+							if containerDomain.ID == containerDto.ResourceID.Int64 {
+								containerDto.ContainerItemDto = &container.ContainerItemDto{
+									ID:    containerDomain.ID,
+									Code:  containerDomain.Code,
+									Name:  containerDomain.Name,
+									Type:  string(containerDomain.ContainerType),
+									Count: containerDto.ItemsCount,
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 	return containerDtos, int64(totalCount), nil
 }
 
@@ -53,7 +119,38 @@ func (s *ContainerServiceImpl) GetContainerByID(containerID int64) (*container.C
 		log.Printf("%+v\n", err)
 		return nil, err
 	}
-	return s.ContainerConverter.ToDto(domainContainer), nil
+	containerDto := s.ContainerConverter.ToDto(domainContainer)
+	if containerDto.ResourceID.Valid && containerDto.ResourceName.Valid {
+		if containerDto.ResourceName.String == "*domain.Product" {
+			product, err := s.ProductRepo.GetById(containerDto.ResourceID.Int64)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return nil, err
+			}
+			containerDto.ContainerItemDto = &container.ContainerItemDto{
+				ID:    product.ID,
+				Code:  product.Code,
+				Name:  product.Name,
+				Type:  string(product.ProductType),
+				Count: containerDto.ItemsCount,
+			}
+		}
+		if containerDto.ResourceName.String == "*domain.Container" {
+			containerDomain, err := s.ContainerRepo.GetById(containerDto.ResourceID.Int64)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return nil, err
+			}
+			containerDto.ContainerItemDto = &container.ContainerItemDto{
+				ID:    containerDomain.ID,
+				Code:  containerDomain.Code,
+				Name:  containerDomain.Name,
+				Type:  string(containerDomain.ContainerType),
+				Count: containerDto.ItemsCount,
+			}
+		}
+	}
+	return containerDto, nil
 }
 
 func (s *ContainerServiceImpl) GetMinimalContainerByID(containerID int64) (*container.ContainerMinimalDto, error) {
@@ -177,6 +274,96 @@ func (s *ContainerServiceImpl) MarkContainerFullByCode(code string) error {
 
 	err = s.ContainerRepo.MarkContainerFullById(domainContainer.ID)
 	if err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (s *ContainerServiceImpl) GetAllContainerApprovals(page int16, pageSize int16, sort string, filter *container.ContainerFilterDto) ([]*container.ContainerDto, int64, error) {
+	filter.IsApproved = customtypes.NewValidNullBool(false)
+	totalCount, err := s.ContainerRepo.GetTotalCount(filter)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, 0, err
+	}
+	domainContainers, err := s.ContainerRepo.GetAll(int(page), int(pageSize), sort, filter)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, 0, err
+	}
+	// Convert domain containers to DTOs. You can do this based on your requirements.
+	var containerDtos []*container.ContainerDto = s.ContainerConverter.ToDtoSlice(domainContainers)
+
+	if len(containerDtos) > 0 {
+		resourceIds := make([]int64, 0, len(containerDtos))
+		for _, containerDto := range containerDtos {
+			if containerDto.ResourceID.Valid && containerDto.ResourceName.Valid && containerDto.ResourceName.String == "*domain.Product" {
+				resourceIds = append(resourceIds, containerDto.ResourceID.Int64)
+			}
+		}
+		if len(resourceIds) > 0 {
+			products, err := s.ProductRepo.GetByIds(resourceIds)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return nil, 0, err
+			}
+			if len(products) > 0 {
+				for _, containerDto := range containerDtos {
+					if containerDto.ResourceID.Valid {
+						for _, product := range products {
+							if product.ID == containerDto.ResourceID.Int64 {
+								containerDto.ContainerItemDto = &container.ContainerItemDto{
+									ID:    product.ID,
+									Code:  product.Code,
+									Name:  product.Name,
+									Type:  string(product.ProductType),
+									Count: containerDto.ItemsCount,
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if len(containerDtos) > 0 {
+		resourceIds := make([]int64, 0, len(containerDtos))
+		for _, containerDto := range containerDtos {
+			if containerDto.ResourceID.Valid && containerDto.ResourceName.Valid && containerDto.ResourceName.String == "*domain.Container" {
+				resourceIds = append(resourceIds, containerDto.ResourceID.Int64)
+			}
+		}
+		if len(resourceIds) > 0 {
+			containerDomains, err := s.ContainerRepo.GetByIds(resourceIds)
+			if err != nil {
+				log.Printf("%+v\n", err)
+				return nil, 0, err
+			}
+			if len(containerDomains) > 0 {
+				for _, containerDto := range containerDtos {
+					if containerDto.ResourceID.Valid {
+						for _, containerDomain := range containerDomains {
+							if containerDomain.ID == containerDto.ResourceID.Int64 {
+								containerDto.ContainerItemDto = &container.ContainerItemDto{
+									ID:    containerDomain.ID,
+									Code:  containerDomain.Code,
+									Name:  containerDomain.Name,
+									Type:  string(containerDomain.ContainerType),
+									Count: containerDto.ItemsCount,
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return containerDtos, int64(totalCount), nil
+}
+
+func (s *ContainerServiceImpl) ApproveContainerByIDs(containerIDs []int64) error {
+	if err := s.ContainerRepo.ApproveContainerByIDs(containerIDs); err != nil {
 		log.Printf("%+v\n", err)
 		return err
 	}

@@ -3,6 +3,7 @@ package service
 import (
 	"log"
 
+	"github.com/vamika-digital/wms-api-server/core/base/customtypes"
 	"github.com/vamika-digital/wms-api-server/core/base/helpers"
 	"github.com/vamika-digital/wms-api-server/core/business/master/converter"
 	"github.com/vamika-digital/wms-api-server/core/business/master/domain"
@@ -61,6 +62,7 @@ func (s *RequisitionServiceImpl) GetAllRequisitions(page int16, pageSize int16, 
 
 func (s *RequisitionServiceImpl) CreateRequisition(requisitionDto *requisition.RequisitionCreateDto) error {
 	var newRequisition *domain.Requisition = s.RequisitionConverter.ToDomain(requisitionDto)
+	newRequisition.IsApproved = false
 	err := s.RequisitionRepo.Create(newRequisition)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -222,7 +224,7 @@ func (s *RequisitionServiceImpl) GetRequisitionByCode(requisitionCode string) (*
 
 	// Attached Stockout Quantity, Required Quantity
 	for _, requisitionItem := range domainRequisition.Items {
-		requiredQty := requisitionItem.PendingQuantity - requisitionItem.LockedQuantity
+		requiredQty := requisitionItem.Quantity - requisitionItem.LockedQuantity
 		for i := 0; i < len(reports) && requiredQty > 0; i++ {
 			if reports[i].ProductID == requisitionItem.ProductID {
 				stockOutQty := min(requiredQty, reports[i].StockCount)
@@ -241,5 +243,50 @@ func (s *RequisitionServiceImpl) GetRequisitionByCode(requisitionCode string) (*
 			}
 		}
 	}
+
 	return s.RequisitionConverter.ToDto(domainRequisition), reports, palletItems, nil
+}
+
+func (s *RequisitionServiceImpl) GetAllRequisitionApprovals(page int16, pageSize int16, sort string, filter *requisition.RequisitionFilterDto) ([]*requisition.RequisitionDto, int64, error) {
+	filter.IsApproved = customtypes.NewValidNullBool(false)
+	totalCount, err := s.RequisitionRepo.GetTotalCount(filter)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, 0, err
+	}
+	domainRequisitions, err := s.RequisitionRepo.GetAll(int(page), int(pageSize), sort, filter)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		return nil, 0, err
+	}
+
+	if len(domainRequisitions) > 0 {
+		jobOrderIds := make([]int64, 0, len(domainRequisitions))
+		for _, jobOrder := range domainRequisitions {
+			jobOrderIds = append(jobOrderIds, jobOrder.ID)
+		}
+
+		jobOrderItemsMap, err := s.RequisitionRepo.GetItemsForRequisitions(jobOrderIds)
+		if err != nil {
+			log.Printf("%+v\n", err)
+			return nil, 0, err
+		}
+		for i, jobOrder := range domainRequisitions {
+			if roles, ok := jobOrderItemsMap[jobOrder.ID]; ok {
+				domainRequisitions[i].Items = roles
+			}
+		}
+	}
+
+	// Convert domain requisitions to DTOs. You can do this based on your requirements.
+	var requisitionDtos []*requisition.RequisitionDto = s.RequisitionConverter.ToDtoSlice(domainRequisitions)
+	return requisitionDtos, int64(totalCount), nil
+}
+
+func (s *RequisitionServiceImpl) ApproveRequisitionByIDs(requisitionIDs []int64) error {
+	if err := s.RequisitionRepo.ApproveRequisitionByIDs(requisitionIDs); err != nil {
+		log.Printf("%+v\n", err)
+		return err
+	}
+	return nil
 }

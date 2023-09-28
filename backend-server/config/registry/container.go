@@ -158,12 +158,12 @@ func (c *Container) initialize(db drivers.Connection) error {
 
 	c.RoleService = adminService.NewRoleService(roleRepo, permissionRepo, roleConverter)
 	c.UserService = adminService.NewUserService(userRepo, roleRepo, userConverter)
-	c.AuthService = authService.NewAuthService(userRepo, *userConverter)
+	c.AuthService = authService.NewAuthService(userRepo, roleRepo, permissionRepo, *userConverter)
 
 	c.CustomerService = masterService.NewCustomerService(customerRepo, customerConverter)
 	c.MachineService = masterService.NewMachineService(machineRepo, machineConverter)
 	c.StoreService = masterService.NewStoreService(storeRepo, userRepo, storeConverter)
-	c.ContainerService = masterService.NewContainerService(containerRepo, containerConverter)
+	c.ContainerService = masterService.NewContainerService(containerRepo, productRepo, containerConverter)
 	c.ProductService = masterService.NewProductService(productRepo, productConverter)
 	c.JobOrderService = masterService.NewJobOrderService(joborderRepo, customerRepo, productRepo, joborderConverter)
 	c.OutwardRequestService = masterService.NewOutwardRequestService(outwardrequestRepo, inventoryRepo, customerRepo, productRepo, outwardrequestConverter)

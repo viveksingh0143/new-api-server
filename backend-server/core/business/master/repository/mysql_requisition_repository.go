@@ -43,6 +43,11 @@ func (r *SQLRequisitionRepository) getFilterQueryWithArgs(page int, pageSize int
 		args["order_no"] = filter.OrderNo
 	}
 
+	if filter.IsApproved.Valid {
+		queryBuffer.WriteString(" AND approved = :approved")
+		args["approved"] = filter.IsApproved.Bool
+	}
+
 	if filter.Status.IsValid() {
 		queryBuffer.WriteString(" AND status = :status")
 		args["status"] = filter.Status
@@ -131,7 +136,7 @@ func (r *SQLRequisitionRepository) Create(requisition *domain.Requisition) error
 		return err
 	}
 
-	query := `INSERT INTO requisitions (issued_date ,order_no ,department ,store_id ,status ,last_updated_by) VALUES(:issued_date, :order_no, :department, :store_id, :status, :last_updated_by)`
+	query := `INSERT INTO requisitions (issued_date, order_no, department, store_id, approved, status, last_updated_by) VALUES(:issued_date, :order_no, :department, :store_id, :approved, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, requisition)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -285,4 +290,32 @@ func (r *SQLRequisitionRepository) GetItemsForRequisition(orderID int64) ([]*dom
 		return nil, err
 	}
 	return requisitionItems, nil
+}
+
+func (r *SQLRequisitionRepository) ApproveRequisitionByIDs(requisitionIDs []int64) error {
+	if len(requisitionIDs) == 0 {
+		return nil
+	}
+
+	tx, err := r.DB.Beginx()
+	if err != nil {
+		return err
+	}
+
+	query := "UPDATE requisitions SET approved = ? WHERE id IN (?)"
+	query, args, err := sqlx.In(query, 1, requisitionIDs)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query = tx.Rebind(query)
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

@@ -11,3 +11,26 @@ type Permission struct {
 	Export     bool   `db:"export_perm" json:"export"`
 	Import     bool   `db:"import_perm" json:"import"`
 }
+
+func (p *Permission) GetAllActivePermissions() []string {
+	result := make([]string, 0)
+	if p.Read {
+		result = append(result, "READ")
+	}
+	if p.Create {
+		result = append(result, "CREATE")
+	}
+	if p.Update {
+		result = append(result, "UPDATE")
+	}
+	if p.Delete {
+		result = append(result, "DELETE")
+	}
+	if p.Export {
+		result = append(result, "EXPORT")
+	}
+	if p.Import {
+		result = append(result, "IMPORT")
+	}
+	return result
+}

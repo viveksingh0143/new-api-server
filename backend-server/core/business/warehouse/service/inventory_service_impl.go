@@ -139,7 +139,10 @@ func (s *InventoryServiceImpl) CreateRawMaterialStock(rmStockForm *inventory.Inv
 	stockForm.StoreID = domainStore.ID
 	stockForm.Barcode = helpers.GenerateBarcode(domainProduct.Code)
 	stockForm.UnitWeight = domainProduct.UnitWeight
+	stockForm.PackageQuantity = 1
+	stockForm.Status = customtypes.STOCK_IN_APPROVAL
 
+	domainPallet.IsApproved = false
 	domainPallet.IncreamentStock(rmStockForm.Quantity, domainProduct.ID, resourceType)
 
 	err = s.InventoryRepo.CreateRawMaterialStock(stockForm, domainPallet)
@@ -184,18 +187,19 @@ func (s *InventoryServiceImpl) CreateFinishedGoodsStock(fdStockForm *inventory.I
 		}
 
 		fdStock := &domain.Stock{
-			ProductID:     batchLabel.Product.ID,
-			StoreID:       domainStore.ID,
-			BinID:         customtypes.NewValidNullInt64(domainBin.ID),
-			BatchLabelID:  customtypes.NewValidNullInt64(batchLabel.ID),
-			Barcode:       barcode,
-			BatchNo:       batchLabel.BatchNo,
-			UnitWeight:    float64(batchLabel.UnitWeight),
-			Quantity:      batchLabel.PackageQuantity,
-			MachineCode:   batchLabel.Machine.Code,
-			StockInAt:     time.Now(),
-			Status:        customtypes.STOCK_IN,
-			LastUpdatedBy: fdStockForm.LastUpdatedBy,
+			ProductID:       batchLabel.Product.ID,
+			StoreID:         domainStore.ID,
+			BinID:           customtypes.NewValidNullInt64(domainBin.ID),
+			BatchLabelID:    customtypes.NewValidNullInt64(batchLabel.ID),
+			Barcode:         barcode,
+			BatchNo:         batchLabel.BatchNo,
+			UnitWeight:      float64(batchLabel.UnitWeight),
+			Quantity:        1,
+			PackageQuantity: batchLabel.PackageQuantity,
+			MachineCode:     batchLabel.Machine.Code,
+			StockInAt:       time.Now(),
+			Status:          customtypes.STOCK_IN,
+			LastUpdatedBy:   fdStockForm.LastUpdatedBy,
 		}
 		domainBin.IncreamentStock(batchLabel.PackageQuantity, batchLabel.Product.ID, resourceType)
 		stickers = append(stickers, &domain.LabelSticker{
@@ -225,6 +229,10 @@ func (s *InventoryServiceImpl) AttachContainer(sourceCode string, destinationCod
 	sourceContainer, err := s.ContainerRepo.GetByCode(sourceCode)
 	if err != nil {
 		return err
+	}
+
+	if !sourceContainer.IsApproved {
+		return fmt.Errorf("%s is not approved", strings.ToLower(sourceContainer.Code))
 	}
 
 	if !sourceContainer.IsFull() {

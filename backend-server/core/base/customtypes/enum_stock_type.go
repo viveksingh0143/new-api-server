@@ -10,6 +10,7 @@ import (
 type StockStatus string
 
 const (
+	STOCK_IN_APPROVAL StockStatus = "STOCK-IN-APPROVAL"
 	STOCK_DISPATCHING StockStatus = "STOCK-DISPATCHING"
 	STOCK_IN          StockStatus = "STOCK-IN"
 	STOCK_OUT         StockStatus = "STOCK-OUT"
@@ -18,7 +19,7 @@ const (
 )
 
 func GetAllStockStatus() []StockStatus {
-	return []StockStatus{STOCK_DISPATCHING, STOCK_IN, STOCK_OUT, STOCK_REJECT}
+	return []StockStatus{STOCK_IN_APPROVAL, STOCK_DISPATCHING, STOCK_IN, STOCK_OUT, STOCK_REJECT}
 }
 
 func (s StockStatus) IsValid() bool {
@@ -58,6 +59,8 @@ func (s *StockStatus) UnmarshalJSON(data []byte) error {
 	str := strings.ToUpper(strings.Trim(string(data), `"`))
 
 	switch str {
+	case strings.ToUpper(string(STOCK_IN_APPROVAL)):
+		*s = STOCK_IN_APPROVAL
 	case strings.ToUpper(string(STOCK_DISPATCHING)):
 		*s = STOCK_DISPATCHING
 	case strings.ToUpper(string(STOCK_IN)):

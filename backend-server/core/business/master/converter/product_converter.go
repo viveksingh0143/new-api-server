@@ -19,6 +19,7 @@ func (c *ProductConverter) ToMinimalDto(domainProduct *domain.Product) *product.
 	productDto := &product.ProductMinimalDto{
 		ID:             domainProduct.ID,
 		ProductType:    domainProduct.ProductType,
+		ProductSubType: domainProduct.ProductSubType,
 		Code:           domainProduct.Code,
 		LinkCode:       domainProduct.LinkCode,
 		Name:           domainProduct.Name,
@@ -35,6 +36,7 @@ func (c *ProductConverter) ToDto(domainProduct *domain.Product) *product.Product
 	productDto := &product.ProductDto{
 		ID:             domainProduct.ID,
 		ProductType:    domainProduct.ProductType,
+		ProductSubType: domainProduct.ProductSubType,
 		Code:           domainProduct.Code,
 		LinkCode:       domainProduct.LinkCode,
 		Name:           domainProduct.Name,
@@ -69,6 +71,7 @@ func (c *ProductConverter) ToMinimalDtoSlice(domainProducts []*domain.Product) [
 func (c *ProductConverter) ToDomain(productDto *product.ProductCreateDto) *domain.Product {
 	domainProduct := &domain.Product{
 		ProductType:    productDto.ProductType,
+		ProductSubType: productDto.ProductSubType,
 		Code:           productDto.Code,
 		LinkCode:       productDto.LinkCode,
 		Name:           productDto.Name,
@@ -88,6 +91,7 @@ func (c *ProductConverter) ToDomain(productDto *product.ProductCreateDto) *domai
 
 func (c *ProductConverter) ToUpdateDomain(domainProduct *domain.Product, productDto *product.ProductUpdateDto) {
 	domainProduct.ProductType = productDto.ProductType
+	domainProduct.ProductSubType = productDto.ProductSubType
 	domainProduct.Code = productDto.Code
 	domainProduct.LinkCode = productDto.LinkCode
 	domainProduct.Name = productDto.Name

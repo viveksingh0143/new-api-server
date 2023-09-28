@@ -12,6 +12,7 @@ type RequisitionDto struct {
 	Department    string                 `json:"department"`
 	StoreID       int64                  `json:"store_id"`
 	Store         *store.StoreMinimalDto `json:"store"`
+	IsApproved    bool                   `json:"approved"`
 	Status        customtypes.StatusEnum `json:"status"`
 	CreatedAt     customtypes.NullTime   `json:"created_at"`
 	UpdatedAt     customtypes.NullTime   `json:"updated_at"`

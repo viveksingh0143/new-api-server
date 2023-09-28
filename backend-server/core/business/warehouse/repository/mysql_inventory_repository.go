@@ -184,7 +184,7 @@ func (r *SQLInventoryRepository) CreateRawMaterialStock(stockForm *domain.Stock,
 		return err
 	}
 
-	query := `INSERT INTO stocks (product_id, store_id, bin_id, pallet_id, rack_id, batchlabel_id, barcode, batch_no, unit_weight, quantity, machine_code, stockin_at, stockout_at, status, last_updated_by ) VALUES (:product_id, :store_id, :bin_id, :pallet_id, :rack_id, :batchlabel_id, :barcode, :batch_no, :unit_weight, :quantity, :machine_code, :stockin_at, :stockout_at, :status, :last_updated_by)`
+	query := `INSERT INTO stocks (product_id, store_id, bin_id, pallet_id, rack_id, batchlabel_id, barcode, batch_no, unit_weight, quantity, package_quantity, machine_code, stockin_at, stockout_at, status, last_updated_by ) VALUES (:product_id, :store_id, :bin_id, :pallet_id, :rack_id, :batchlabel_id, :barcode, :batch_no, :unit_weight, :quantity, :package_quantity, :machine_code, :stockin_at, :stockout_at, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, stockForm)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -200,7 +200,7 @@ func (r *SQLInventoryRepository) CreateRawMaterialStock(stockForm *domain.Stock,
 	}
 	stockForm.ID = id
 
-	containerQuery := "UPDATE containers SET stock_level=:stock_level, resource_id=:resource_id, resource_name=:resource_name, items_count=:items_count WHERE id=:id"
+	containerQuery := "UPDATE containers SET approved=:approved, stock_level=:stock_level, resource_id=:resource_id, resource_name=:resource_name, items_count=:items_count WHERE id=:id"
 	_, err = tx.NamedExec(containerQuery, containerForm)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -219,7 +219,7 @@ func (r *SQLInventoryRepository) CreateFinishedStocks(fdStocks []*domain.Stock, 
 	}
 
 	for _, fdStock := range fdStocks {
-		query := `INSERT INTO stocks (product_id, store_id, bin_id, pallet_id, rack_id, batchlabel_id, barcode, batch_no, unit_weight, quantity, machine_code, stockin_at, stockout_at, status, last_updated_by ) VALUES (:product_id, :store_id, :bin_id, :pallet_id, :rack_id, :batchlabel_id, :barcode, :batch_no, :unit_weight, :quantity, :machine_code, :stockin_at, :stockout_at, :status, :last_updated_by)`
+		query := `INSERT INTO stocks (product_id, store_id, bin_id, pallet_id, rack_id, batchlabel_id, barcode, batch_no, unit_weight, quantity, package_quantity, machine_code, stockin_at, stockout_at, status, last_updated_by ) VALUES (:product_id, :store_id, :bin_id, :pallet_id, :rack_id, :batchlabel_id, :barcode, :batch_no, :unit_weight, :quantity, :package_quantity, :machine_code, :stockin_at, :stockout_at, :status, :last_updated_by)`
 		res, err := tx.NamedExec(query, fdStock)
 		if err != nil {
 			log.Printf("%+v\n", err)
@@ -260,7 +260,7 @@ func (r *SQLInventoryRepository) CreateFinishedStocks(fdStocks []*domain.Stock, 
 func (r *SQLInventoryRepository) GetInventoryDetailForProductIds(productIds []int64) ([]*reports.InventoryRackStatusDetail, error) {
 	result := make([]*reports.InventoryRackStatusDetail, 0)
 
-	query := "SELECT c.id AS rack_id, c.code AS rack_code, c.name AS rack_name, c.address AS rack_address, p.id AS product_id, p.name AS product_name, p.code AS product_code, SUM(CASE WHEN s.status = 'STOCK-IN' THEN s.quantity ELSE 0 END) AS stockin_count, SUM(CASE WHEN s.status IN ('STOCK-DISPATCHING','STOCK-OUT','STOCK-REJECT') THEN s.quantity ELSE 0 END) AS stockout_count, MAX(CASE WHEN s.status = 'STOCK-IN' THEN s.stockin_at ELSE NULL END) AS stockin_at FROM stocks s JOIN containers c ON s.rack_id = c.id JOIN products p ON s.product_id = p.id WHERE s.rack_id IS NOT NULL AND s.product_id IN (?) GROUP BY c.id, c.name, p.id, p.name, p.code  HAVING stockin_count - stockout_count  > 0 ORDER BY stockin_at"
+	query := "SELECT c.id AS rack_id, c.code AS rack_code, c.name AS rack_name, c.address AS rack_address, p.id AS product_id, p.name AS product_name, p.code AS product_code, SUM(CASE WHEN s.status = 'STOCK-IN' THEN s.quantity ELSE 0 END) AS stockin_count, SUM(CASE WHEN s.status IN ('STOCK-DISPATCHING','STOCK-OUT') THEN s.quantity ELSE 0 END) AS stockout_count, MAX(CASE WHEN s.status = 'STOCK-IN' THEN s.stockin_at ELSE NULL END) AS stockin_at FROM stocks s JOIN containers c ON s.rack_id = c.id JOIN products p ON s.product_id = p.id WHERE s.rack_id IS NOT NULL AND s.product_id IN (?) GROUP BY c.id, c.name, p.id, p.name, p.code  HAVING stockin_count - stockout_count  > 0 ORDER BY stockin_at"
 	query, args, err := sqlx.In(query, productIds)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -293,7 +293,7 @@ func (r *SQLInventoryRepository) AttachContainer(destinationContainer *masterDom
 		return err
 	}
 
-	updateQuery := "UPDATE stocks SET DESTINATIONID=?, status='STOCK-IN' WHERE SOURCEID=? AND (status='STOCK-IN' OR status='STOCK-DISPATCHING')"
+	updateQuery := "UPDATE stocks SET DESTINATIONID=?, status='STOCK-IN', request_id=NULL, request_name=NULL WHERE SOURCEID=? AND (status='STOCK-IN' OR status='STOCK-DISPATCHING')"
 	if destinationContainer.ContainerType.IsBinType() {
 		updateQuery = strings.Replace(updateQuery, "DESTINATIONID", "bin_id", 1)
 	} else if destinationContainer.ContainerType.IsPalletType() {
@@ -334,8 +334,11 @@ func (r *SQLInventoryRepository) DeattachRackContainer(rackContainer *masterDoma
 		return err
 	}
 
-	updateQuery := "UPDATE stocks SET rack_id=null, request_id=?, request_name=?, status='STOCK-DISPATCHING' WHERE rack_id=?"
-	_, err = tx.Exec(updateQuery, requestID, requestName, rackContainer.ID)
+	log.Printf("Request ID: %d", requestID)
+	log.Printf("Request Name: %s", requestName)
+
+	updateQuery := "UPDATE stocks SET rack_id=?, request_id=?, request_name=?, status='STOCK-DISPATCHING' WHERE rack_id=?"
+	_, err = tx.Exec(updateQuery, nil, requestID, requestName, rackContainer.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -346,7 +349,7 @@ func (r *SQLInventoryRepository) DeattachRackContainer(rackContainer *masterDoma
 
 func (r *SQLInventoryRepository) GetLockedInventoryDetailForRequest(requestID int64, requestName string) ([]*reports.RequestLockedInventoryStatusDetail, error) {
 	result := make([]*reports.RequestLockedInventoryStatusDetail, 0)
-	query := "SELECT p.id AS product_id, p.name AS product_name, p.code AS product_code, SUM(CASE WHEN s.status = 'STOCK-DISPATCHING' THEN s.quantity ELSE 0 END) AS stockdispatching_count, SUM(CASE WHEN s.status = 'STOCK-OUT' THEN s.quantity ELSE 0 END) AS stockout_count FROM stocks s JOIN products p ON s.product_id = p.id WHERE s.request_id = ? AND s.request_name = ? GROUP BY p.id, p.name, p.code"
+	query := "SELECT p.id AS product_id, p.name AS product_name, p.code AS product_code, SUM(CASE WHEN s.status = 'STOCK-IN' THEN s.quantity ELSE 0 END) AS stockin_count, SUM(CASE WHEN s.status = 'STOCK-DISPATCHING' THEN s.quantity ELSE 0 END) AS stockdispatching_count, SUM(CASE WHEN s.status = 'STOCK-OUT' THEN s.quantity ELSE 0 END) AS stockout_count FROM stocks s JOIN products p ON s.product_id = p.id WHERE s.request_id = ? AND s.request_name = ? GROUP BY p.id, p.name, p.code"
 	if err := r.DB.Select(&result, query, requestID, requestName); err != nil {
 		log.Printf("%+v\n", err)
 		return nil, err
@@ -355,7 +358,7 @@ func (r *SQLInventoryRepository) GetLockedInventoryDetailForRequest(requestID in
 		if record.StockDispatchingCount <= 0 {
 			record.LockCount = 0
 		} else {
-			record.LockCount = record.StockDispatchingCount - record.StockOutCount
+			record.LockCount = record.StockInCount + record.StockDispatchingCount - record.StockOutCount
 		}
 	}
 	return result, nil
@@ -380,13 +383,13 @@ func (r *SQLInventoryRepository) GetLockedInventoryStocksWithPalletForRequest(re
 
 func (r *SQLInventoryRepository) GetLockedInventoryStocksWithBinForRequest(requestID int64, requestName string) ([]*reports.InventoryBinStatusDetail, error) {
 	result := make([]*reports.InventoryBinStatusDetail, 0)
-	query := "SELECT c.id AS bin_id, c.code AS bin_code, c.name AS bin_name, p.id AS product_id, p.name AS product_name, p.code AS product_code, SUM(CASE WHEN s.status = 'STOCK-DISPATCHING' THEN s.quantity ELSE 0 END) AS stockdispatching_count, SUM(CASE WHEN s.status = 'STOCK-OUT' THEN s.quantity ELSE 0 END) AS stockout_count, MAX(CASE WHEN s.status = 'STOCK-DISPATCHING' THEN s.stockin_at ELSE NULL END) AS stockin_at FROM stocks s JOIN containers c ON s.bin_id = c.id JOIN products p ON s.product_id = p.id WHERE s.request_id = ? AND s.request_name = ? GROUP BY c.id, c.name, p.id, p.name, p.code ORDER BY stockin_at"
+	query := "SELECT c.id AS bin_id, c.code AS bin_code, c.name AS bin_name, p.id AS product_id, p.name AS product_name, p.code AS product_code, SUM(CASE WHEN s.status = 'STOCK-IN' THEN s.quantity ELSE 0 END) AS stockin_count, SUM(CASE WHEN s.status = 'STOCK-DISPATCHING' THEN s.quantity ELSE 0 END) AS stockdispatching_count, SUM(CASE WHEN s.status = 'STOCK-OUT' THEN s.quantity ELSE 0 END) AS stockout_count, MAX(CASE WHEN s.status = 'STOCK-DISPATCHING' THEN s.stockin_at ELSE NULL END) AS stockin_at FROM stocks s JOIN containers c ON s.bin_id = c.id JOIN products p ON s.product_id = p.id WHERE s.request_id = ? AND s.request_name = ? GROUP BY c.id, c.name, p.id, p.name, p.code ORDER BY stockin_at"
 	if err := r.DB.Select(&result, query, requestID, requestName); err != nil {
 		log.Printf("%+v\n", err)
 		return nil, err
 	}
 	for _, record := range result {
-		record.LockCount = record.StockDispatchingCount - record.StockOutCount
+		record.LockCount = record.StockInCount + record.StockDispatchingCount - record.StockOutCount
 	}
 	return result, nil
 }

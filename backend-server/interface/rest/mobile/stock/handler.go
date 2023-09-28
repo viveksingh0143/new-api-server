@@ -26,21 +26,21 @@ type ContainerAttachmentParams struct {
 
 type ContainerDeattachmentParams struct {
 	RackCode    string `json:"rack_code" validation:"required"`
-	RequestID   int64  `json:"request_id" validation:"request_id"`
-	RequestName string `json:"request_name" validation:"request_name"`
+	RequestID   int64  `json:"request_id" validation:"required,min:1"`
+	RequestName string `json:"request_name" validation:"required"`
 }
 
 type RawMaterialStockOutParams struct {
 	PalletCode  string `json:"pallet_code" validation:"required"`
 	Quantity    int64  `json:"quantity" validation:"required"`
-	RequestID   int64  `json:"request_id" validation:"request_id"`
-	RequestName string `json:"request_name" validation:"request_name"`
+	RequestID   int64  `json:"request_id" validation:"required,min:1"`
+	RequestName string `json:"request_name" validation:"required"`
 }
 
 type FinishedGoodStockOutParams struct {
 	Barcode     string `json:"barcode" validation:"required"`
-	RequestID   int64  `json:"request_id" validation:"request_id"`
-	RequestName string `json:"request_name" validation:"request_name"`
+	RequestID   int64  `json:"request_id" validation:"required,min:1"`
+	RequestName string `json:"request_name" validation:"required"`
 }
 
 func NewStockHandler(inventoryService service.InventoryService, requisitionService masterService.RequisitionService, outwardRequestService masterService.OutwardRequestService) *StockRestHandler {
@@ -187,6 +187,18 @@ func (h *StockRestHandler) DeattachRackContainer(c *gin.Context) {
 		return
 	}
 
+	if containerParams.RequestID <= 0 {
+		err := &dto.IError{
+			Field:   "request_id",
+			Message: "request ID should be present",
+			Value:   "0",
+		}
+		var errs []*dto.IError
+		errs = append(errs, err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, "Please fill the form correctly", errs))
+		return
+	}
+
 	err := h.InventoryService.DeattachRackContainer(containerParams.RackCode, containerParams.RequestID, containerParams.RequestName)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -246,6 +258,16 @@ func (h *StockRestHandler) GetRequisitionByCode(c *gin.Context) {
 	if err != nil {
 		log.Printf("%+v\n", err)
 		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	if requisition.Status.IsDisable() {
+		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusBadRequest, "Requition is disabled", nil))
+		return
+	}
+
+	if !requisition.IsApproved {
+		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusBadRequest, "Requition is not approved yet", nil))
 		return
 	}
 

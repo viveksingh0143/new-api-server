@@ -156,3 +156,51 @@ func (handler *OutwardRequestRestHandler) DeleteOutwardRequestByIDs(c *gin.Conte
 
 	c.Status(http.StatusOK)
 }
+
+func (h *OutwardRequestRestHandler) GetShipperLabelsByID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	shipperLabels, err := h.OutwardRequestService.GetShipperLabelsByID(id)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusNotFound, "Resource not found", nil))
+		return
+	}
+	c.JSON(http.StatusOK, shipperLabels)
+}
+
+func (h *OutwardRequestRestHandler) GenerateShipperLabelsByID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	var formDTO = &outwardrequest.ShippingLabelCreateDto{}
+	if err := c.ShouldBindJSON(&formDTO); err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, err.Error(), nil))
+		return
+	}
+
+	if err := validators.Validate.Struct(formDTO); err != nil {
+		log.Printf("%+v\n", err)
+		errors := validators.GetAllErrors(err, formDTO)
+		c.JSON(http.StatusBadRequest, dto.GetErrorRestResponse(http.StatusBadRequest, "Please fill the form correctly", errors))
+		return
+	}
+
+	err = h.OutwardRequestService.GenerateShipperLabelsByID(id, formDTO.BatchNo, formDTO.ProductID)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusNotFound, dto.GetErrorRestResponse(http.StatusNotFound, "Resource not found", nil))
+		return
+	}
+	c.JSON(http.StatusCreated, dto.GetRestResponse(http.StatusCreated, "shipper created sucessfully"))
+}

@@ -12,6 +12,7 @@ type Requisition struct {
 	OrderNo       string                 `db:"order_no" json:"order_no"`
 	Department    string                 `db:"department" json:"department"`
 	StoreID       int64                  `db:"store_id" json:"store_id"`
+	IsApproved    bool                   `db:"approved" json:"approved"`
 	Status        customtypes.StatusEnum `db:"status" json:"status"`
 	CreatedAt     time.Time              `db:"created_at" json:"created_at"`
 	UpdatedAt     *time.Time             `db:"updated_at" json:"updated_at"`

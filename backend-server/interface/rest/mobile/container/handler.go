@@ -26,7 +26,7 @@ type MarkContainerParams struct {
 
 type ContainerParams struct {
 	Code          string `form:"code" binding:"required"`
-	ContainerType string `form:"type" binding:"required,oneof=pallet bin rack PALLET BIN RACK"`
+	ContainerType string `form:"type" binding:"required,oneof=Pallet Bin Rack pallet bin rack PALLET BIN RACK"`
 }
 
 func (h *ContainerRestHandler) GetOneContainerByCodeAndType(c *gin.Context) {

@@ -33,7 +33,7 @@ func (c *RoleConverter) ToDto(domainRole *domain.Role) *role.RoleDto {
 	}
 
 	// Convert Permissions from domain model to DTO
-	var permissionDtos []*permission.PermissionDto
+	var permissionDtos []*permission.PermissionDto = make([]*permission.PermissionDto, 0)
 	for _, domainPermission := range domainRole.Permissions {
 		permissionDto := &permission.PermissionDto{
 			ID:         domainPermission.ID,

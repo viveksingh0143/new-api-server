@@ -7,6 +7,7 @@ import (
 type ProductMinimalDto struct {
 	ID             int64                      `json:"id"`
 	ProductType    customtypes.ProductType    `json:"product_type"`
+	ProductSubType string                     `json:"product_subtype"`
 	Code           string                     `json:"code"`
 	LinkCode       string                     `json:"link_code"`
 	Name           string                     `json:"name"`

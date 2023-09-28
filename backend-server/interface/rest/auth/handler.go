@@ -62,6 +62,13 @@ func (handler *AuthRestHandler) LoginHandler(c *gin.Context) {
 		return
 	}
 
+	allPermissions, err := handler.authService.GetAllPermissions(validUser)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusInternalServerError, "Issue at getting all permissions", nil))
+		return
+	}
+
 	c.JSON(http.StatusOK, dto.RestResponse{
 		Status: http.StatusOK,
 		Data: auth.LoginTokenDto{
@@ -69,6 +76,7 @@ func (handler *AuthRestHandler) LoginHandler(c *gin.Context) {
 			RefreshToken: refreshToken,
 			Name:         validUser.Name,
 			StaffID:      validUser.StaffID.String,
+			Permissions:  allPermissions,
 		},
 	})
 }
@@ -117,6 +125,13 @@ func (handler *AuthRestHandler) RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
+	allPermissions, err := handler.authService.GetAllPermissions(validUser)
+	if err != nil {
+		log.Printf("%+v\n", err)
+		c.JSON(http.StatusInternalServerError, dto.GetErrorRestResponse(http.StatusInternalServerError, "Issue at getting all permissions", nil))
+		return
+	}
+
 	c.JSON(http.StatusOK, dto.RestResponse{
 		Status: http.StatusOK,
 		Data: auth.LoginTokenDto{
@@ -124,6 +139,7 @@ func (handler *AuthRestHandler) RefreshTokenHandler(c *gin.Context) {
 			RefreshToken: refreshToken,
 			Name:         validUser.Name,
 			StaffID:      validUser.StaffID.String,
+			Permissions:  allPermissions,
 		},
 	})
 }

@@ -72,6 +72,11 @@ func (r *SQLProductRepository) getFilterQueryWithArgs(page int, pageSize int, so
 		args["product_type"] = filter.ProductType
 	}
 
+	if filter.ProductSubType != "" {
+		queryBuffer.WriteString(" AND product_subtype = :product_subtype")
+		args["product_subtype"] = filter.ProductSubType
+	}
+
 	if filter.Status.IsValid() {
 		queryBuffer.WriteString(" AND status = :status")
 		args["status"] = filter.Status
@@ -156,7 +161,7 @@ func (r *SQLProductRepository) Create(product *domain.Product) error {
 	}
 
 	// Insert product
-	query := `INSERT INTO products (product_type, code, link_code, name, description, unit_type, unit_weight, unit_weight_type, status, last_updated_by) VALUES (:product_type, :code, :link_code, :name, :description, :unit_type, :unit_weight, :unit_weight_type, :status, :last_updated_by)`
+	query := `INSERT INTO products (product_type, product_subtype, code, link_code, name, description, unit_type, unit_weight, unit_weight_type, status, last_updated_by) VALUES (:product_type, :product_subtype, :code, :link_code, :name, :description, :unit_type, :unit_weight, :unit_weight_type, :status, :last_updated_by)`
 	res, err := tx.NamedExec(query, product)
 	if err != nil {
 		log.Printf("%+v\n", err)
@@ -223,7 +228,7 @@ func (r *SQLProductRepository) Update(product *domain.Product) error {
 		return err
 	}
 
-	query := "UPDATE products SET product_type=:product_type, link_code=:link_code, name=:name, description=:description, unit_type=:unit_type, unit_weight=:unit_weight, unit_weight_type=:unit_weight_type, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
+	query := "UPDATE products SET product_type=:product_type, product_subtype=:product_subtype, link_code=:link_code, name=:name, description=:description, unit_type=:unit_type, unit_weight=:unit_weight, unit_weight_type=:unit_weight_type, status=:status, last_updated_by=:last_updated_by WHERE id=:id"
 	_, err = tx.NamedExec(query, product)
 	if err != nil {
 		log.Printf("%+v\n", err)
